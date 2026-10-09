@@ -157,3 +157,34 @@ describe('storage', () => {
     expect(parseImport(JSON.stringify({ schemaVersion: 99, library: {} }), NOW).error).toMatch(/newer/);
   });
 });
+
+describe('storage v3 and per-profile keys', () => {
+  it('upgrades v2 data to v3 with sound and personalisation defaults', () => {
+    const store = new MemStore();
+    store.setItem(STORAGE_KEY, JSON.stringify({ schemaVersion: 2, library: {}, settings: { dailyGoal: 20 }, xp: 3 }));
+    const r = loadData(store, NOW);
+    expect(r.data.schemaVersion).toBe(3);
+    expect(r.data.settings).toMatchObject({ dailyGoal: 20, sfx: true, sfxVolume: 0.6, interests: [], autoLevel: false });
+    expect(store.getItem(`${BACKUP_PREFIX}v2`)).not.toBeNull();
+  });
+
+  it('reads and writes a profile-specific key with its own backups', () => {
+    const store = new MemStore();
+    const key = 'vocabquest.state.p1';
+    store.setItem(key, JSON.stringify({ schemaVersion: 2, library: {}, xp: 7 }));
+    const r = loadData(store, NOW, { key });
+    expect(r.data.xp).toBe(7);
+    expect(store.getItem(`${BACKUP_PREFIX}${key}.v2`)).not.toBeNull();
+    saveData(store, r.data, key);
+    expect(JSON.parse(store.getItem(key)!).schemaVersion).toBe(3);
+    expect(store.getItem(STORAGE_KEY)).toBeNull();
+  });
+
+  it('drops a malformed placement and turns auto level off', () => {
+    const store = new MemStore();
+    store.setItem(STORAGE_KEY, JSON.stringify({ schemaVersion: 3, library: {}, settings: { autoLevel: true }, placement: { theta: 'x' } }));
+    const r = loadData(store, NOW);
+    expect(r.data.placement).toBeUndefined();
+    expect(r.data.settings.autoLevel).toBe(false);
+  });
+});

@@ -73,7 +73,7 @@ export interface Attempt {
 export interface LibraryItem {
   vocabId: string;
   addedAt: number;
-  source: 'daily' | 'manual';
+  source: 'daily' | 'manual' | 'placement';
   favorite: boolean;
   state: LearningState;
   /** 0..1 */
@@ -117,6 +117,39 @@ export interface Settings {
   speechRate: number;
   weights: ReviewWeights;
   showBoss: boolean;
+  /** Sound effects (correct/wrong/select/next…). */
+  sfx: boolean;
+  /** 0..1 */
+  sfxVolume: number;
+  /** Topic tags to favour for new words (from the placement survey). */
+  interests: string[];
+  /** Use the placement test's ability estimate for new-word difficulty. */
+  autoLevel: boolean;
+}
+
+export type Cefr = 'A1' | 'A2' | 'B1' | 'B2' | 'C1';
+export type PlacementKind = 'meaning' | 'context' | 'listening' | 'spelling';
+
+export interface PlacementAnswer {
+  vocabId: string;
+  difficulty: number;
+  kind: PlacementKind;
+  result: AnswerResult;
+}
+
+export interface PlacementResult {
+  takenAt: number;
+  /** Ability estimate on the 1 (A1) … 5 (C1) difficulty scale. */
+  theta: number;
+  /** Standard error of the estimate. */
+  se: number;
+  cefr: Cefr;
+  answers: PlacementAnswer[];
+  skills: Record<'reading' | 'listening' | 'writing', { correct: number; total: number }>;
+  weakSkill?: Skill;
+  goals: string[];
+  minutesPerDay: number;
+  selfRating: number;
 }
 
 export interface DailyPlan {
@@ -153,4 +186,5 @@ export interface AppData {
   achievements: Record<string, number>;
   modeStats: Record<string, { played: number; correct: number; graded: number }>;
   activityDays: string[];
+  placement?: PlacementResult;
 }

@@ -1,4 +1,5 @@
 import { createRng, hashString, shuffle } from '../core/rng';
+import { weakSkill } from '../core/personalize';
 import { selectForReview } from '../core/selection';
 import type { AppData, Skill, VocabEntry } from '../core/types';
 import { VOCAB, WORDS } from '../data/words';
@@ -27,7 +28,11 @@ export function reviewPlan(env: LaunchEnv, opts: { size?: number; only?: string[
     only: opts.only ? new Set(opts.only) : undefined,
   });
   const ctx = { all: WORDS, audioAvailable: env.audioAvailable, seed: seedOf(env, 'plan') };
-  return planReview(playOrder(env, sel.ids), ctx, { skills: opts.skills, title: opts.only ? 'Focused Review' : 'Adaptive Review' });
+  return planReview(playOrder(env, sel.ids), ctx, {
+    skills: opts.skills,
+    title: opts.only ? 'Focused Review' : 'Adaptive Review',
+    preferSkill: weakSkill(env.data, env.now),
+  });
 }
 
 /** Single mode practice, choosing words adaptively among those the mode supports. */

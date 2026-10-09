@@ -8,7 +8,7 @@ import type { AppData, LibraryItem, Settings } from './types';
 
 export const STORAGE_KEY = 'vocabquest.state';
 export const BACKUP_PREFIX = 'vocabquest.backup.';
-export const CURRENT_SCHEMA = 2;
+export const CURRENT_SCHEMA = 3;
 export const SESSION_CAP = 200;
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -20,6 +20,10 @@ export const DEFAULT_SETTINGS: Settings = {
   speechRate: 0.9,
   weights: { ...DEFAULT_WEIGHTS },
   showBoss: true,
+  sfx: true,
+  sfxVolume: 0.6,
+  interests: [],
+  autoLevel: false,
 };
 
 export function defaultData(): AppData {
@@ -53,11 +57,14 @@ export const MIGRATIONS: Record<number, Migration> = {
     const settings = { showBoss: true, ...((d.settings ?? {}) as Raw) };
     return { ...d, library: next, settings, schemaVersion: 2 };
   },
+  // v2 → v3: profiles, placement test and sound-effect settings (all optional, defaults filled on load).
+  2: (d) => ({ ...d, schemaVersion: 3 }),
 };
 
 export interface KeyValueStore {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
+  removeItem?(key: string): void;
 }
 
 export interface LoadResult {
@@ -77,7 +84,7 @@ export function normalizeItem(key: string, raw: Raw, now: number): LibraryItem {
   const item: LibraryItem = {
     vocabId: typeof raw.vocabId === 'string' ? raw.vocabId : key,
     addedAt: num(raw.addedAt, now),
-    source: raw.source === 'manual' ? 'manual' : 'daily',
+    source: raw.source === 'manual' || raw.source === 'placement' ? raw.source : 'daily',
     favorite: raw.favorite === true,
     state: 'new',
     confidence: Math.min(1, Math.max(0, num(raw.confidence, 0))),
@@ -132,6 +139,10 @@ export function normalizeData(raw: Raw, now: number): AppData {
         }
       : { ...DEFAULT_WEIGHTS },
     showBoss: s.showBoss !== false,
+    sfx: s.sfx !== false,
+    sfxVolume: Math.min(1, Math.max(0, num(s.sfxVolume, DEFAULT_SETTINGS.sfxVolume))),
+    interests: Array.isArray(s.interests) ? [...new Set(s.interests.filter((x): x is string => typeof x === 'string'))] : [],
+    autoLevel: s.autoLevel === true,
   };
 
   const lib = isObj(raw.library) ? raw.library : {};
@@ -163,6 +174,12 @@ export function normalizeData(raw: Raw, now: number): AppData {
     ? Object.fromEntries(Object.entries(raw.achievements).filter(([, v]) => typeof v === 'number')) as Record<string, number>
     : {};
   d.modeStats = isObj(raw.modeStats) ? (raw.modeStats as AppData['modeStats']) : {};
+  const pl = raw.placement;
+  if (isObj(pl) && typeof pl.theta === 'number' && Number.isFinite(pl.theta) && typeof pl.cefr === 'string') {
+    d.placement = pl as unknown as AppData['placement'];
+  } else if (d.settings.autoLevel) {
+    d.settings.autoLevel = false;
+  }
   d.activityDays = Array.isArray(raw.activityDays)
     ? [...new Set(raw.activityDays.filter((x): x is string => typeof x === 'string'))].sort()
     : [];
@@ -172,7 +189,12 @@ export function normalizeData(raw: Raw, now: number): AppData {
 export interface MigrationOptions {
   current?: number;
   migrations?: Record<number, Migration>;
+  /** Storage key of the document (one per learner profile). */
+  key?: string;
 }
+
+const backupKey = (key: string, suffix: string) =>
+  key === STORAGE_KEY ? `${BACKUP_PREFIX}${suffix}` : `${BACKUP_PREFIX}${key}.${suffix}`;
 
 export function migrate(raw: Raw, opts: MigrationOptions = {}): { data: Raw; from: number; to: number } {
   const current = opts.current ?? CURRENT_SCHEMA;
@@ -192,10 +214,11 @@ export function migrate(raw: Raw, opts: MigrationOptions = {}): { data: Raw; fro
 
 export function loadData(store: KeyValueStore, now: number, opts: MigrationOptions = {}): LoadResult {
   const current = opts.current ?? CURRENT_SCHEMA;
+  const docKey = opts.key ?? STORAGE_KEY;
   const notices: string[] = [];
   let text: string | null = null;
   try {
-    text = store.getItem(STORAGE_KEY);
+    text = store.getItem(docKey);
   } catch {
     return { data: defaultData(), notices: ['Storage is unavailable; progress will not be saved.'], readOnly: true };
   }
@@ -208,7 +231,7 @@ export function loadData(store: KeyValueStore, now: number, opts: MigrationOptio
     raw = undefined;
   }
   if (!isObj(raw)) {
-    const key = `${BACKUP_PREFIX}corrupt.${now}`;
+    const key = backupKey(docKey, `corrupt.${now}`);
     try {
       store.setItem(key, text);
     } catch {
@@ -230,7 +253,7 @@ export function loadData(store: KeyValueStore, now: number, opts: MigrationOptio
     return { data: { ...normalizeData(raw, now), schemaVersion: version }, notices, readOnly: true };
   }
   if (version < current) {
-    const key = `${BACKUP_PREFIX}v${version}`;
+    const key = backupKey(docKey, `v${version}`);
     try {
       store.setItem(key, text);
     } catch {
@@ -251,9 +274,9 @@ export function loadData(store: KeyValueStore, now: number, opts: MigrationOptio
   return { data, notices, readOnly: false };
 }
 
-export function saveData(store: KeyValueStore, data: AppData): { ok: boolean; error?: string } {
+export function saveData(store: KeyValueStore, data: AppData, key = STORAGE_KEY): { ok: boolean; error?: string } {
   try {
-    store.setItem(STORAGE_KEY, JSON.stringify(data));
+    store.setItem(key, JSON.stringify(data));
     return { ok: true };
   } catch (e) {
     return { ok: false, error: (e as Error).message };

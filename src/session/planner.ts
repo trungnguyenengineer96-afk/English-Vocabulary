@@ -129,10 +129,12 @@ export function singleTargetModes(skills?: Skill[]): AnyModeDef[] {
 export function planReview(
   targets: VocabEntry[],
   ctx: PlanContext,
-  opts: { skills?: Skill[]; kind?: SessionSummary['kind']; title?: string } = {},
+  opts: { skills?: Skill[]; kind?: SessionSummary['kind']; title?: string; preferSkill?: Skill } = {},
 ): SessionPlan {
   const rng = createRng(ctx.seed);
   const pool = singleTargetModes(opts.skills);
+  // Modes of the learner's weak skill get a head start in the rotation (about 2x as often).
+  const usage = (m: AnyModeDef) => (uses.get(m.id) ?? 0) * (m.skill === opts.preferSkill ? 0.5 : 1);
   const uses = new Map<ModeId, number>();
   const questions: PlannedQuestion[] = [];
   const dropped: string[] = [];
@@ -141,7 +143,7 @@ export function planReview(
     const sorted = shuffle(
       pool.filter((m) => eligible(m, t, ctx)),
       rng,
-    ).sort((a, b) => (uses.get(a.id) ?? 0) - (uses.get(b.id) ?? 0));
+    ).sort((a, b) => usage(a) - usage(b));
     // Least-used first; the previous question's mode only as a last resort.
     const candidates = [...sorted.filter((m) => m.id !== prev), ...sorted.filter((m) => m.id === prev)];
     let placed = false;

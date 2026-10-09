@@ -95,3 +95,36 @@ describe('selectDaily', () => {
     expect(r.ids.length).toBe(3);
   });
 });
+
+describe('personalised daily selection', () => {
+  it('mixForTheta centres slightly above the ability and sums to 1', async () => {
+    const { mixForTheta } = await import('./daily');
+    const m = mixForTheta(2.0);
+    expect(m.reduce((a, b) => a + b, 0)).toBeCloseTo(1, 6);
+    expect(m.indexOf(Math.max(...m))).toBe(1); // A2 peak (θ+0.4 = 2.4)
+    expect(mixForTheta(4.6).indexOf(Math.max(...mixForTheta(4.6)))).toBe(4);
+  });
+
+  it('a placement mix steers difficulty', async () => {
+    const { mixForTheta } = await import('./daily');
+    let sum = 0, n = 0;
+    for (let seed = 1; seed <= 15; seed++)
+      for (const id of selectDaily(WORDS, { goal: 10, level: 'beginner', mix: mixForTheta(4.2), seed, exclude: new Set() }).ids) {
+        sum += byId.get(id)!.difficulty;
+        n++;
+      }
+    expect(sum / n).toBeGreaterThan(3.6);
+  });
+
+  it('interest topics are favoured but the topic cap still holds', () => {
+    let hits = 0, plain = 0;
+    for (let seed = 1; seed <= 25; seed++) {
+      const ids = selectDaily(WORDS, { goal: 10, level: 'intermediate', seed, exclude: new Set(), interests: ['travel', 'places'] }).ids;
+      checkConstraints(ids, 10);
+      hits += ids.filter((id) => byId.get(id)!.tags.some((t) => t === 'travel' || t === 'places')).length;
+      plain += selectDaily(WORDS, { goal: 10, level: 'intermediate', seed, exclude: new Set() }).ids
+        .filter((id) => byId.get(id)!.tags.some((t) => t === 'travel' || t === 'places')).length;
+    }
+    expect(hits).toBeGreaterThan(plain);
+  });
+});

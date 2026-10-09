@@ -12,6 +12,20 @@ export const LEVEL_MIX: Record<LearnerLevel, number[]> = {
   advanced: [0, 0.1, 0.25, 0.35, 0.3],
 };
 
+/**
+ * Difficulty mix centred slightly above a measured ability θ (1 = A1 … 5 = C1),
+ * so new words are "a little harder than comfortable" (i+1).
+ */
+export function mixForTheta(theta: number, stretch = 0.4, sd = 0.8): number[] {
+  const centre = Math.min(5, Math.max(1, theta + stretch));
+  const w = [1, 2, 3, 4, 5].map((d) => Math.exp(-((d - centre) ** 2) / (2 * sd * sd)));
+  const total = w.reduce((a, b) => a + b, 0);
+  return w.map((x) => x / total);
+}
+
+/** Interest topics are favoured by this factor (the topic cap still applies). */
+export const INTEREST_BOOST = 1.8;
+
 export const TOPIC_CAP_SHARE = 0.3;
 
 export type RelaxStep = 'topic-cap' | 'adjacency';
@@ -24,6 +38,10 @@ export interface DailyOptions {
   exclude: Set<string>;
   /** Ids already in today's plan (when topping up after a goal increase). */
   existing?: string[];
+  /** Explicit difficulty mix (overrides `level`), e.g. from a placement test. */
+  mix?: number[];
+  /** Topic tags the learner cares about; matching words are preferred. */
+  interests?: string[];
 }
 
 export interface DailyResult {
@@ -31,8 +49,8 @@ export interface DailyResult {
   relaxed: RelaxStep[];
 }
 
-export function quotas(goal: number, level: LearnerLevel): number[] {
-  const mix = LEVEL_MIX[level];
+export function quotas(goal: number, levelOrMix: LearnerLevel | number[]): number[] {
+  const mix = Array.isArray(levelOrMix) ? levelOrMix : LEVEL_MIX[levelOrMix];
   const raw = mix.map((m) => m * goal);
   const out = raw.map(Math.floor);
   let left = goal - out.reduce((a, b) => a + b, 0);
@@ -60,6 +78,7 @@ interface Ctx {
   chosen: VocabEntry[];
   topicCap: number;
   relax: Set<RelaxStep>;
+  interests: Set<string>;
 }
 
 function allowed(c: VocabEntry, ctx: Ctx): boolean {
@@ -84,7 +103,7 @@ function pickOne(candidates: VocabEntry[], ctx: Ctx, rng: Rng): VocabEntry | und
   if (ok.length === 0) return undefined;
   // Prefer common words; rare words still appear.
   const i = weightedIndex(
-    ok.map((c) => 0.5 + c.frequency / 5),
+    ok.map((c) => (0.5 + c.frequency / 5) * (c.tags.some((t) => ctx.interests.has(t)) ? INTEREST_BOOST : 1)),
     rng,
   );
   return ok[i];
@@ -111,6 +130,7 @@ export function selectDaily(dataset: VocabEntry[], opts: DailyOptions): DailyRes
     chosen: existing.slice(),
     topicCap: Math.max(1, Math.ceil(opts.goal * TOPIC_CAP_SHARE)),
     relax: new Set(),
+    interests: new Set(opts.interests ?? []),
   };
   const need = opts.goal - existing.length;
   if (need <= 0) return { ids: existing.map((e) => e.id).slice(0, opts.goal), relaxed: [] };
@@ -124,7 +144,7 @@ export function selectDaily(dataset: VocabEntry[], opts: DailyOptions): DailyRes
   }
 
   // Slots for the words still needed, distributed by level quotas.
-  const q = quotas(opts.goal, opts.level);
+  const q = quotas(opts.goal, opts.mix ?? opts.level);
   for (const e of existing) q[e.difficulty - 1] = Math.max(0, q[e.difficulty - 1] - 1);
   const slots: Difficulty[] = [];
   q.forEach((n, i) => {

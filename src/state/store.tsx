@@ -1,12 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, type ReactNode } from 'react';
 import { newlyUnlocked } from '../core/achievements';
-import { selectDaily } from '../core/daily';
+import { mixForTheta, selectDaily } from '../core/daily';
+import { applyPlacement } from '../core/placement';
 import { dayKey } from '../core/dates';
 import { addToLibrary, toggleFavorite } from '../core/library';
 import { hashString } from '../core/rng';
 import { applyAnswer, newLibraryItem, type GradeInput } from '../core/scheduler';
 import { SESSION_CAP, STORAGE_KEY, defaultData, loadData, saveData, type KeyValueStore } from '../core/storage';
-import type { AppData, DailyGoal, DailyPlan, SessionSummary, Settings } from '../core/types';
+import type { AppData, DailyGoal, DailyPlan, PlacementResult, SessionSummary, Settings } from '../core/types';
 import { WORDS } from '../data/words';
 
 type Action =
@@ -18,6 +19,7 @@ type Action =
   | { type: 'settings'; patch: Partial<Settings>; now: number }
   | { type: 'favorite'; vocabId: string }
   | { type: 'unlock'; id: string; now: number }
+  | { type: 'placement'; result: PlacementResult; now: number }
   | { type: 'replace'; data: AppData };
 
 /** Create or resize today's plan. Learned words are never removed from a plan. */
@@ -39,6 +41,8 @@ export function planFor(data: AppData, now: number): DailyPlan {
   const r = selectDaily(WORDS, {
     goal,
     level: data.settings.level,
+    mix: data.settings.autoLevel && data.placement ? mixForTheta(data.placement.theta) : undefined,
+    interests: data.settings.interests,
     seed: hashString(`${date}|${goal}`),
     exclude,
     existing: existing?.vocabIds,
@@ -112,6 +116,8 @@ export function reducer(d: AppData, a: Action): AppData {
       return { ...d, library: toggleFavorite(d.library, a.vocabId) };
     case 'unlock':
       return d.achievements[a.id] ? d : { ...d, achievements: { ...d.achievements, [a.id]: a.now } };
+    case 'placement':
+      return reducer(unlock(applyPlacement(d, a.result, a.now), a.now), { type: 'ensurePlan', now: a.now });
     case 'replace':
       return a.data;
   }
@@ -131,6 +137,7 @@ interface StoreValue {
   toggleFav: (vocabId: string) => void;
   unlockAchievement: (id: string) => void;
   replaceData: (data: AppData) => void;
+  completePlacement: (result: PlacementResult) => void;
   resetAll: () => void;
   ensurePlan: () => void;
 }
@@ -141,13 +148,15 @@ export interface StoreProviderProps {
   children: ReactNode;
   storage?: KeyValueStore;
   clock?: () => number;
+  /** Storage document key (one per learner profile). */
+  storageKey?: string;
 }
 
-export function StoreProvider({ children, storage, clock }: StoreProviderProps) {
+export function StoreProvider({ children, storage, clock, storageKey = STORAGE_KEY }: StoreProviderProps) {
   const store = storage ?? (typeof localStorage !== 'undefined' ? localStorage : undefined);
   const now = useCallback(() => (clock ? clock() : Date.now()), [clock]);
   const initial = useMemo(
-    () => (store ? loadData(store, now()) : { data: defaultData(), notices: [], readOnly: true }),
+    () => (store ? loadData(store, now(), { key: storageKey }) : { data: defaultData(), notices: [], readOnly: true }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
@@ -166,22 +175,22 @@ export function StoreProvider({ children, storage, clock }: StoreProviderProps) 
     const text = JSON.stringify(data);
     if (text === lastText.current) return;
     lastText.current = text;
-    const r = saveData(store, data);
+    const r = saveData(store, data, storageKey);
     if (!r.ok) notices.current = [...notices.current, `Could not save progress (${r.error}).`];
-  }, [data, store, initial.readOnly, initial.notices.length]);
+  }, [data, store, initial.readOnly, initial.notices.length, storageKey]);
 
   // Another tab saved progress: adopt it so this tab never overwrites newer data.
   useEffect(() => {
     if (!store || typeof window === 'undefined') return;
     const onStorage = (e: StorageEvent) => {
-      if (e.key !== STORAGE_KEY || !e.newValue || e.newValue === lastText.current) return;
-      const r = loadData(store, now());
+      if (e.key !== storageKey || !e.newValue || e.newValue === lastText.current) return;
+      const r = loadData(store, now(), { key: storageKey });
       lastText.current = JSON.stringify(r.data);
       dispatch({ type: 'replace', data: r.data });
     };
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
-  }, [store, now]);
+  }, [store, now, storageKey]);
 
   const value = useMemo<StoreValue>(
     () => ({
@@ -198,6 +207,7 @@ export function StoreProvider({ children, storage, clock }: StoreProviderProps) 
       toggleFav: (vocabId) => dispatch({ type: 'favorite', vocabId }),
       unlockAchievement: (id) => dispatch({ type: 'unlock', id, now: now() }),
       replaceData: (d) => dispatch({ type: 'replace', data: d }),
+      completePlacement: (result) => dispatch({ type: 'placement', result, now: now() }),
       resetAll: () => dispatch({ type: 'replace', data: defaultData() }),
       ensurePlan: () => dispatch({ type: 'ensurePlan', now: now() }),
     }),

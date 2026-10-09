@@ -3,7 +3,7 @@ import { dueCount, formatPct, libraryMastery, recentImprovement, sessionAccuracy
 import { levelForXp } from '../../core/scoring';
 import { VOCAB } from '../../data/words';
 import { meaningText } from '../../modes/shared';
-import { reviewPlan } from '../../session/launch';
+import { mixedPlan, reviewPlan } from '../../session/launch';
 import { useStore } from '../../state/store';
 import { useAudio } from '../audio';
 import { useNav } from '../nav';
@@ -64,10 +64,15 @@ export function Dashboard() {
         </section>
         <section className="card action-card play">
           <h2><span aria-hidden="true">🎮</span> Game modes</h2>
-          <p className="muted">Mixed Challenge, Boss Battle and 30 mini-games.</p>
-          <button type="button" className="btn" onClick={() => go('play')} disabled={saved === 0}>
-            Open game hub
-          </button>
+          <p className="muted">Mixed Challenge, an optional Boss Battle and 30 mini-games.</p>
+          <div className="row">
+            <button type="button" className="btn primary" onClick={() => startSession(mixedPlan({ data, now: t, audioAvailable: audio.available }, 'mixed'))} disabled={saved < 4}>
+              🎪 Mixed Challenge
+            </button>
+            <button type="button" className="btn" onClick={() => go('play')} disabled={saved === 0}>
+              Game hub
+            </button>
+          </div>
           {saved === 0 && <p className="muted small">Learn some words first to unlock games.</p>}
         </section>
       </div>

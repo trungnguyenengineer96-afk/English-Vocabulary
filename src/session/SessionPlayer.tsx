@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { initialScore, scoreAnswer, sessionXp, type ScoreState } from '../core/scoring';
 import { categorize, type ReviewCategory } from '../core/selection';
-import type { SessionSummary } from '../core/types';
+import type { SessionSummary, Skill } from '../core/types';
 import { VOCAB } from '../data/words';
 import { MODE_BY_ID, SKILL_LABEL } from '../modes/registry';
 import type { GradedResult, ModeRuntime } from '../modes/types';
@@ -110,7 +110,12 @@ export function SessionPlayer({ plan, onExit, onReplay }: Props) {
       wrongIds: graded.filter((r) => r.result !== 'correct').map((r) => r.vocabId),
     };
     store.finishSession(summary);
-    setOutcome({ summary, results: res, startCategory, bestCombo: s.bestCombo, completed });
+    const skillOf: Record<string, Skill> = {};
+    for (const pq of plan.questions) {
+      const m = MODE_BY_ID.get(pq.modeId);
+      if (m) for (const id of pq.targetIds) skillOf[id] = plan.rounds[pq.round]?.skill ?? m.skill;
+    }
+    setOutcome({ summary, results: res, startCategory, bestCombo: s.bestCombo, completed, skillOf, multiSkill: plan.rounds.length > 1 });
   }, [plan, store, startCategory]);
 
   const next = () => {
@@ -124,6 +129,13 @@ export function SessionPlayer({ plan, onExit, onReplay }: Props) {
   useEffect(() => {
     if (revealed) nextRef.current?.focus();
   }, [revealed]);
+
+  // On each new question, move focus into it (unless the mode already focused an input).
+  useEffect(() => {
+    if (outcome) return;
+    const card = document.querySelector('.mode-card');
+    if (card && !card.contains(document.activeElement)) document.getElementById('mode-title')?.focus();
+  }, [index, outcome]);
 
   useEffect(() => {
     if (!revealed) return;
@@ -185,14 +197,14 @@ export function SessionPlayer({ plan, onExit, onReplay }: Props) {
         </div>
       </header>
       {plan.rounds.length > 1 && round && (
-        <p className="round-banner">
-          Round {q.round + 1}/{plan.rounds.length}: {round.title}
-          {round.skill ? ` · ${SKILL_LABEL[round.skill].icon} ${SKILL_LABEL[round.skill].name}` : ''}
+        <p className="round-banner" key={`round-${q.round}`}>
+          Round {q.round + 1}/{plan.rounds.length}
+          {round.skill ? ` · ${SKILL_LABEL[round.skill].icon} ${SKILL_LABEL[round.skill].name}` : ` · ${round.title}`}
         </p>
       )}
       <section className="card mode-card" aria-labelledby="mode-title">
         <div className="mode-title-row">
-          <h2 id="mode-title">
+          <h2 id="mode-title" tabIndex={-1}>
             <span aria-hidden="true">{mode.icon}</span> {mode.name}
           </h2>
           <span className={`skill-badge ${mode.skill}`}>{SKILL_LABEL[mode.skill].name}</span>

@@ -71,7 +71,7 @@ function BossBattle({ question, runtime, report, done, revealed }: ModeProps<Q>)
           </div>
           <span className="muted small">HP {hp}/{boss.hp}</span>
         </div>
-        <div className="hearts" aria-label={`${hearts} of ${HEARTS} hearts left`}>
+        <div className="hearts" role="img" aria-label={`${hearts} of ${HEARTS} hearts left`}>
           {Array.from({ length: HEARTS }, (_, k) => (
             <span key={k} aria-hidden="true">{k < hearts ? '❤️' : '🖤'}</span>
           ))}

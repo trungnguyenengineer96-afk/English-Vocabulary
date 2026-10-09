@@ -166,3 +166,109 @@ export function planReview(
     dropped,
   };
 }
+
+export type MixedFocus = 'mixed' | 'reading' | 'listening' | 'writing';
+export const MIXED_ROUNDS = 4;
+export const MIXED_PER_ROUND = 5;
+
+export interface MixedOptions {
+  focus: MixedFocus;
+  showBoss: boolean;
+  /** How often each mode has been played before (prefers less-played modes for variety). */
+  usage?: Partial<Record<ModeId, number>>;
+}
+
+/** Round skills for a Mixed Challenge. Listening is replaced when audio is unavailable. */
+export function mixedSkills(focus: MixedFocus, audioAvailable: boolean, rng: Rng): Skill[] {
+  if (focus !== 'mixed') {
+    if (focus === 'listening' && !audioAvailable) throw new Error('Listening focus needs audio');
+    return Array(MIXED_ROUNDS).fill(focus);
+  }
+  const base: Skill[] = audioAvailable ? ['reading', 'listening', 'writing', 'arcade'] : ['reading', 'writing', 'arcade', 'reading'];
+  // Keep arcade (where boss fights live) last when present, shuffle the rest for variety.
+  const rest = shuffle(base.filter((s) => s !== 'arcade'), rng);
+  return base.includes('arcade') ? [...rest.slice(0, 3), 'arcade' as Skill].slice(0, MIXED_ROUNDS) : rest;
+}
+
+/**
+ * Mixed Challenge: distinct target words split into four rounds of five, each
+ * round using a different skill and varied mechanics.
+ */
+export function planMixed(targets: VocabEntry[], ctx: PlanContext, opts: MixedOptions): SessionPlan {
+  const rng = createRng(ctx.seed);
+  const skills = mixedSkills(opts.focus, ctx.audioAvailable, rng);
+  const sizes = Array.from({ length: MIXED_ROUNDS }, (_, r) =>
+    Math.floor(targets.length / MIXED_ROUNDS) + (r < targets.length % MIXED_ROUNDS ? 1 : 0),
+  );
+  const usage = new Map<ModeId, number>(Object.entries(opts.usage ?? {}) as [ModeId, number][]);
+  const used = (m: AnyModeDef) => usage.get(m.id) ?? 0;
+  const bump = (id: ModeId) => usage.set(id, (usage.get(id) ?? 0) + 1);
+  const allowed = (m: AnyModeDef) => (opts.showBoss || m.id !== 'boss-battle') && (!m.requiresAudio || ctx.audioAvailable);
+
+  const questions: PlannedQuestion[] = [];
+  const dropped: string[] = [];
+  const rounds: SessionPlan['rounds'] = [];
+  let offset = 0;
+  let prev: ModeId | undefined;
+
+  skills.forEach((skill, r) => {
+    const roundTargets = targets.slice(offset, offset + sizes[r]);
+    offset += sizes[r];
+    if (!roundTargets.length) return;
+    const round = rounds.length;
+    rounds.push({ title: `Round ${round + 1}`, skill });
+    let remaining = roundTargets;
+
+    // Sometimes run the whole round as one multi-word game (always try for arcade rounds).
+    const multi = MODES.filter(
+      (m) => m.skill === skill && m.targetsPerQuestion > 1 && allowed(m) && (m.minTargets ?? m.targetsPerQuestion) <= remaining.length,
+    );
+    const wantMulti = multi.length > 0 && (skill === 'arcade' ? rng() < 0.75 : rng() < 0.35);
+    if (wantMulti) {
+      const m = shuffle(multi, rng).sort((a, b) => used(a) - used(b))[0];
+      const built = buildForMode(m, remaining, ctx, rng, round, `r${round}m`);
+      if (built.questions.length) {
+        questions.push(...built.questions);
+        bump(m.id);
+        prev = m.id;
+        remaining = built.dropped;
+      }
+    }
+
+    // Remaining words: one single-target question each, varying mechanics.
+    const singles = MODES.filter((m) => m.skill === skill && m.targetsPerQuestion === 1 && allowed(m));
+    const fallback = MODES.filter((m) => m.targetsPerQuestion === 1 && allowed(m) && !m.requiresAudio);
+    for (const t of remaining) {
+      let placed = false;
+      for (const pool of [singles, fallback]) {
+        const cands = shuffle(pool.filter((m) => eligible(m, t, ctx)), rng).sort(
+          (a, b) => used(a) - used(b) || Number(a.id === prev) - Number(b.id === prev),
+        );
+        const ordered = [...cands.filter((m) => m.id !== prev), ...cands.filter((m) => m.id === prev)];
+        for (const m of ordered) {
+          const q = m.build([t], bctx(ctx, rng));
+          if (q === null) continue;
+          questions.push({ key: `r${round}q${questions.length}`, modeId: m.id, targetIds: [t.id], question: q, round });
+          bump(m.id);
+          prev = m.id;
+          placed = true;
+          break;
+        }
+        if (placed) break;
+      }
+      if (!placed) dropped.push(t.id);
+    }
+  });
+
+  // Keep round order (multi-word games first within a round is fine).
+  questions.sort((a, b) => a.round - b.round);
+  return {
+    id: newSessionId(),
+    kind: 'mixed',
+    title: opts.focus === 'mixed' ? 'Mixed Challenge' : `${opts.focus[0].toUpperCase()}${opts.focus.slice(1)} Challenge`,
+    rounds,
+    questions,
+    targetIds: questions.flatMap((q) => q.targetIds),
+    dropped,
+  };
+}

@@ -5,7 +5,7 @@ import { dayKey } from '../core/dates';
 import { addToLibrary, toggleFavorite } from '../core/library';
 import { hashString } from '../core/rng';
 import { applyAnswer, newLibraryItem, type GradeInput } from '../core/scheduler';
-import { SESSION_CAP, defaultData, loadData, saveData, type KeyValueStore } from '../core/storage';
+import { SESSION_CAP, STORAGE_KEY, defaultData, loadData, saveData, type KeyValueStore } from '../core/storage';
 import type { AppData, DailyGoal, DailyPlan, SessionSummary, Settings } from '../core/types';
 import { WORDS } from '../data/words';
 
@@ -154,19 +154,34 @@ export function StoreProvider({ children, storage, clock }: StoreProviderProps) 
   const [data, dispatch] = useReducer(reducer, initial.data);
   const notices = useRef(initial.notices);
   const first = useRef(true);
+  /** Last document written or received, so identical state is never re-saved (avoids cross-tab echo). */
+  const lastText = useRef<string | null>(null);
 
   useEffect(() => {
     if (first.current) {
       first.current = false;
       if (!initial.notices.length) return; // nothing changed on load
     }
-    if (store && !initial.readOnly) {
-      const r = saveData(store, data);
-      if (!r.ok && !notices.current.includes('save-failed')) {
-        notices.current = [...notices.current, `Could not save progress (${r.error}).`];
-      }
-    }
+    if (!store || initial.readOnly) return;
+    const text = JSON.stringify(data);
+    if (text === lastText.current) return;
+    lastText.current = text;
+    const r = saveData(store, data);
+    if (!r.ok) notices.current = [...notices.current, `Could not save progress (${r.error}).`];
   }, [data, store, initial.readOnly, initial.notices.length]);
+
+  // Another tab saved progress: adopt it so this tab never overwrites newer data.
+  useEffect(() => {
+    if (!store || typeof window === 'undefined') return;
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== STORAGE_KEY || !e.newValue || e.newValue === lastText.current) return;
+      const r = loadData(store, now());
+      lastText.current = JSON.stringify(r.data);
+      dispatch({ type: 'replace', data: r.data });
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, [store, now]);
 
   const value = useMemo<StoreValue>(
     () => ({

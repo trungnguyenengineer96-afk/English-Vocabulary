@@ -4,7 +4,7 @@ import type { AppData, Skill, VocabEntry } from '../core/types';
 import { VOCAB, WORDS } from '../data/words';
 import { MODE_BY_ID } from '../modes/registry';
 import type { ModeId } from '../modes/types';
-import { eligible, planReview, planSingleMode, type SessionPlan } from './planner';
+import { eligible, planMixed, planReview, planSingleMode, type SessionPlan } from './planner';
 
 export interface LaunchEnv {
   data: AppData;
@@ -61,4 +61,19 @@ export function eligibleCount(env: LaunchEnv, modeId: ModeId): number {
 export function dailyCheckPlan(env: LaunchEnv, ids: string[]): SessionPlan {
   const ctx = { all: WORDS, audioAvailable: env.audioAvailable, seed: seedOf(env, 'daily') };
   return planReview(playOrder(env, ids), ctx, { skills: ['reading', 'arcade'], kind: 'daily-check', title: "Today's Quick Check" });
+}
+
+export const MIXED_SIZE = 20;
+
+export function mixedPlan(env: LaunchEnv, focus: import('./planner').MixedFocus): SessionPlan {
+  const sel = selectForReview(env.data.library, {
+    size: MIXED_SIZE,
+    now: env.now,
+    weights: env.data.settings.weights,
+    seed: seedOf(env, 'mixed-sel'),
+  });
+  const usage: Partial<Record<ModeId, number>> = {};
+  for (const [id, s] of Object.entries(env.data.modeStats)) usage[id as ModeId] = s.graded;
+  const ctx = { all: WORDS, audioAvailable: env.audioAvailable, seed: seedOf(env, `mixed-${focus}`) };
+  return planMixed(playOrder(env, sel.ids), ctx, { focus, showBoss: env.data.settings.showBoss, usage });
 }

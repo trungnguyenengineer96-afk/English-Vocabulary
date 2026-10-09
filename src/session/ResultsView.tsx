@@ -1,6 +1,7 @@
 import { formatPct, sessionAccuracy, sessionCompletion } from '../core/metrics';
 import type { ReviewCategory } from '../core/selection';
-import type { SessionSummary } from '../core/types';
+import type { SessionSummary, Skill } from '../core/types';
+import { SKILL_LABEL } from '../modes/registry';
 import { VOCAB } from '../data/words';
 import { meaningText } from '../modes/shared';
 import type { GradedResult } from '../modes/types';
@@ -14,6 +15,9 @@ export interface SessionOutcome {
   startCategory: Record<string, ReviewCategory | 'unsaved'>;
   bestCombo: number;
   completed: boolean;
+  /** Skill each target was tested with (for per-skill breakdown). */
+  skillOf?: Record<string, Skill>;
+  multiSkill?: boolean;
 }
 
 interface Props {
@@ -69,6 +73,7 @@ export function ResultsView({ outcome, onExit, onReplay }: Props) {
           Session accuracy measures only this session — long-term mastery is tracked separately in your library.
           {outcome.bestCombo >= 3 && ` Best combo: ×${outcome.bestCombo}.`}
         </p>
+        {outcome.multiSkill && outcome.skillOf && <SkillBreakdown results={results} skillOf={outcome.skillOf} />}
         {unlocked.length > 0 && (
           <div className="unlocked">
             {unlocked.map((a) => (
@@ -141,5 +146,27 @@ function WordList({ ids }: { ids: string[] }) {
         ) : null;
       })}
     </ul>
+  );
+}
+
+function SkillBreakdown({ results, skillOf }: { results: Record<string, GradedResult>; skillOf: Record<string, Skill> }) {
+  const rows = (['reading', 'listening', 'writing', 'arcade'] as Skill[])
+    .map((skill) => {
+      const ids = Object.keys(skillOf).filter((id) => skillOf[id] === skill);
+      const graded = ids.filter((id) => results[id]);
+      const correct = graded.filter((id) => results[id].result === 'correct').length;
+      return { skill, total: ids.length, graded: graded.length, correct };
+    })
+    .filter((r) => r.total > 0);
+  const weakest = rows.filter((r) => r.graded > 0).sort((a, b) => a.correct / a.graded - b.correct / b.graded)[0];
+  return (
+    <div className="skill-breakdown" aria-label="Accuracy by skill">
+      {rows.map((r) => (
+        <span key={r.skill} className={`skill-score ${r.skill} ${weakest && rows.length > 1 && r === weakest ? 'weakest' : ''}`}>
+          {SKILL_LABEL[r.skill].icon} {SKILL_LABEL[r.skill].name}: <strong>{r.correct}/{r.graded}</strong>
+        </span>
+      ))}
+      {weakest && rows.length > 1 && <p className="muted small">Focus next on {SKILL_LABEL[weakest.skill].name.toLowerCase()}.</p>}
+    </div>
   );
 }

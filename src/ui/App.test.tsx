@@ -80,3 +80,18 @@ describe('App end-to-end loop (jsdom)', () => {
     expect(screen.getByText('+10')).toBeInTheDocument();
   });
 });
+
+describe('cross-tab safety', () => {
+  it('adopts progress saved by another tab instead of overwriting it', async () => {
+    const store = new MemStore();
+    window.location.hash = '#/home';
+    mount(store);
+    const other = JSON.parse(JSON.stringify({ schemaVersion: 2, library: {}, xp: 777 }));
+    store.setItem(STORAGE_KEY, JSON.stringify(other));
+    const { act } = await import('@testing-library/react');
+    act(() => {
+      window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEY, newValue: JSON.stringify(other) }));
+    });
+    expect(screen.getByText('777 XP total')).toBeInTheDocument();
+  });
+});

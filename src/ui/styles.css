@@ -21,6 +21,7 @@
   --listening: #9a4fe0;
   --writing: #e9741c;
   --arcade: #e0398c;
+  --arcade-ink: #b8226b;
   --new: #8a8aa8;
   --learning: #e9741c;
   --familiar: #2f7de1;
@@ -54,6 +55,7 @@
     --listening: #c391ff;
     --writing: #ffa15a;
     --arcade: #ff7cbc;
+    --arcade-ink: #ff7cbc;
     --shadow: 0 6px 22px rgba(0, 0, 0, 0.35);
     --focus: 0 0 0 3px #15122b, 0 0 0 6px #8b7dff;
     color-scheme: dark;
@@ -534,7 +536,7 @@ mark.highlight { background: #ffe066; color: #1f1b3a; border-radius: 6px; paddin
 .dead-label { font-size: 0.75rem; text-transform: uppercase; }
 .combo-meter { display: flex; align-items: center; justify-content: center; gap: 0.8rem; flex-wrap: wrap; background: var(--surface-2); border-radius: 14px; padding: 0.5rem; }
 .combo-flame { transition: font-size 0.2s ease; }
-.combo-count { font-size: 1.5rem; font-weight: 900; color: var(--arcade); }
+.combo-count { font-size: 1.5rem; font-weight: 900; color: var(--arcade-ink); }
 .boss-arena { display: flex; justify-content: space-between; align-items: center; gap: 1rem; background: linear-gradient(135deg, #2a1f4f, #4b2a6a); color: #fff; border-radius: 18px; padding: 0.9rem 1.1rem; flex-wrap: wrap; }
 .boss { display: grid; gap: 0.25rem; min-width: 220px; flex: 1; }
 .boss .muted { color: rgba(255,255,255,0.75); }
@@ -546,7 +548,7 @@ mark.highlight { background: #ffe066; color: #1f1b3a; border-radius: 6px; paddin
 .hearts { font-size: 1.6rem; letter-spacing: 0.15rem; }
 .battle-log { text-align: center; font-weight: 800; }
 .challenge { display: grid; gap: 0.7rem; }
-.challenge-label { font-weight: 900; color: var(--arcade); margin: 0; }
+.challenge-label { font-weight: 900; color: var(--arcade-ink); margin: 0; }
 .stage-track { list-style: none; display: flex; gap: 0.4rem; justify-content: center; padding: 0; margin: 0; flex-wrap: wrap; }
 .stage { padding: 0.3rem 0.8rem; border-radius: 999px; background: var(--surface-2); font-weight: 800; border: 2px solid var(--border); }
 .stage.here { border-color: var(--arcade); }
@@ -562,3 +564,28 @@ mark.highlight { background: #ffe066; color: #1f1b3a; border-radius: 6px; paddin
 .memory-grid.n10 { grid-template-columns: repeat(5, 1fr); }
 .memory-grid.n12 { grid-template-columns: repeat(4, 1fr); }
 @media (max-width: 560px) { .memory-grid.n8, .memory-grid.n10, .memory-grid.n12 { grid-template-columns: repeat(3, 1fr); } }
+.mixed-card { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;
+  background: linear-gradient(135deg, var(--primary-soft), var(--surface)); border-left: 6px solid var(--arcade); }
+.mixed-card > div { flex: 1; min-width: 260px; display: grid; gap: 0.4rem; }
+.action-card .row .btn { margin-top: 0; }
+.action-card .row { margin-top: auto; }
+.skill-breakdown { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; margin: 0.6rem 0; }
+.skill-breakdown p { flex-basis: 100%; text-align: center; margin: 0; }
+.skill-score { background: var(--surface-2); border-radius: 999px; padding: 0.3rem 0.8rem; border: 2px solid transparent; }
+.skill-score.reading { border-color: var(--reading); }
+.skill-score.listening { border-color: var(--listening); }
+.skill-score.writing { border-color: var(--writing); }
+.skill-score.arcade { border-color: var(--arcade); }
+.skill-score.weakest { background: var(--warn-soft); }
+/* State pills: darker fills so white text meets WCAG AA contrast. */
+.state-pill { background: #5c5c78; }
+.state-pill.learning { background: #a84a05; }
+.state-pill.familiar { background: #1f5fb4; }
+.state-pill.mastered { background: #0e7445; }
+.skill-badge.reading { background: #1f5fb4; }
+.skill-badge.listening { background: #7a35bf; }
+.skill-badge.writing { background: #a84a05; }
+.skill-badge.arcade { background: #b8226b; }
+.achievements li.locked { opacity: 1; background: transparent; border: 2px dashed var(--border); }
+.achievements li.locked .ach-icon { filter: grayscale(1); }
+.achievements li.unlocked { border: 2px solid var(--good); }

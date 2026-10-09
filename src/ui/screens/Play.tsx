@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import type { Skill } from '../../core/types';
 import { MODES, SKILL_LABEL } from '../../modes/registry';
 import type { AnyModeDef } from '../../modes/types';
-import { eligibleCount, modePlan } from '../../session/launch';
+import { MIXED_SIZE, eligibleCount, mixedPlan, modePlan } from '../../session/launch';
+import type { MixedFocus } from '../../session/planner';
 import { useStore } from '../../state/store';
 import { useAudio } from '../audio';
 import { useNav } from '../nav';
@@ -16,6 +18,13 @@ export function Play() {
   const saved = Object.keys(data.library).length;
 
   const launch = (m: AnyModeDef) => startSession(modePlan(env, m.id));
+  const [focus, setFocus] = useState<MixedFocus>('mixed');
+  const focusOptions: { id: MixedFocus; label: string; disabled?: boolean }[] = [
+    { id: 'mixed', label: '🎪 Mixed' },
+    { id: 'reading', label: '📖 Reading' },
+    { id: 'listening', label: '🎧 Listening', disabled: !audio.available },
+    { id: 'writing', label: '✏️ Writing' },
+  ];
 
   return (
     <div className="play">
@@ -30,8 +39,29 @@ export function Play() {
           <p className="notice">🔇 No English speech voice is available in this browser, so listening modes are turned off.</p>
         )}
       </section>
+      <section className="card mixed-card" aria-labelledby="mixed-h">
+        <div>
+          <h2 id="mixed-h">🎪 Mixed Challenge</h2>
+          <p className="muted">
+            {Math.min(MIXED_SIZE, saved)} different words from your library · 4 rounds of 5 · reading, listening, writing and arcade mechanics.
+            Ends with a review queue of what to practise next.
+          </p>
+          <div className="chip-row" role="radiogroup" aria-label="Challenge focus">
+            {focusOptions.map((f) => (
+              <button key={f.id} type="button" role="radio" aria-checked={focus === f.id} disabled={f.disabled}
+                className={`chip ${focus === f.id ? 'active' : ''}`} onClick={() => setFocus(f.id)}>
+                {f.label}
+              </button>
+            ))}
+          </div>
+          {saved > 0 && saved < 8 && <p className="muted small">Tip: with fewer than 8 saved words the challenge will be short.</p>}
+        </div>
+        <button type="button" className="btn primary big" disabled={saved < 4} onClick={() => startSession(mixedPlan(env, focus))}>
+          Start challenge ⚔️
+        </button>
+      </section>
       {SKILLS.map((skill) => {
-        const modes = MODES.filter((m) => m.skill === skill);
+        const modes = MODES.filter((m) => m.skill === skill && (data.settings.showBoss || m.id !== 'boss-battle'));
         if (!modes.length) return null;
         return (
           <section key={skill} className={`skill-section ${skill}`} aria-labelledby={`skill-${skill}`}>

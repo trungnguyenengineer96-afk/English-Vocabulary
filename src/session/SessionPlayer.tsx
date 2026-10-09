@@ -55,8 +55,9 @@ export function SessionPlayer({ plan, onExit, onReplay }: Props) {
       audioAvailable: audio.available,
       timersEnabled: !settings.practiceMode,
       reduceMotion: settings.reduceMotion,
+      onAchievement: store.unlockAchievement,
     }),
-    [audio.speak, audio.available, settings.practiceMode, settings.reduceMotion],
+    [audio.speak, audio.available, settings.practiceMode, settings.reduceMotion, store.unlockAchievement],
   );
 
   const report = useCallback(

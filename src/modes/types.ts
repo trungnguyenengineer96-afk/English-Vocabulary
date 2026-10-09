@@ -33,6 +33,8 @@ export interface ModeRuntime {
   /** False in practice mode: timers must not run. */
   timersEnabled: boolean;
   reduceMotion: boolean;
+  /** Unlock a mode-specific achievement (e.g. defeating a boss). */
+  onAchievement?: (id: string) => void;
 }
 
 export interface ModeProps<Q> {

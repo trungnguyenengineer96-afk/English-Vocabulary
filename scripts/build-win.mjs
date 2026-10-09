@@ -27,6 +27,12 @@ function findMakensis() {
 }
 
 const { bin, home } = findMakensis();
+try {
+  execFileSync(bin, ['-VERSION'], { stdio: 'ignore' });
+} catch {
+  console.error('NSIS (makensis) not found. Install it (e.g. `sudo apt install nsis`) or set MAKENSIS=/path/to/makensis.');
+  process.exit(1);
+}
 const out = path.join(root, 'release', `VocabQuest-Setup-${version}.exe`);
 run(bin, [
   `-DVERSION=${version}`,

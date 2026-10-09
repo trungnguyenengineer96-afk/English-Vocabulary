@@ -1,0 +1,53 @@
+name: Windows installer
+
+on:
+  push:
+    branches: [main, 'claude/**']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          sudo apt-get update
+          sudo apt-get install -y nsis
+
+      - name: Typecheck and unit tests
+        run: npm run check
+
+      - name: Build Windows installer
+        run: MAKENSIS=makensis npm run dist:win
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: VocabQuest-Setup
+          path: release/VocabQuest-Setup-*.exe
+          if-no-files-found: error
+
+      - name: Publish to a GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          TAG="v${VERSION}"
+          NOTES="Windows installer for Vocab Quest ${VERSION} (built from ${GITHUB_SHA::7}). Unsigned: if SmartScreen warns, choose More info → Run anyway."
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" release/VocabQuest-Setup-*.exe --clobber
+            gh release edit "$TAG" --notes "$NOTES"
+          else
+            gh release create "$TAG" release/VocabQuest-Setup-*.exe --target "$GITHUB_SHA" --title "Vocab Quest ${VERSION}" --notes "$NOTES"
+          fi

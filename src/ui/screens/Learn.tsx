@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { playSfx } from '../sfx';
+import { confetti } from '../fx';
 import { DAILY_GOALS } from '../../core/daily';
 import { dayKey } from '../../core/dates';
 import type { DailyGoal } from '../../core/types';
@@ -35,7 +37,12 @@ export function Learn() {
 
   const saveAndNext = () => {
     if (!entry) return;
-    if (!isLearned) store.learn(entry.id);
+    if (!isLearned) {
+      store.learn(entry.id);
+      const willComplete = ids.every((id) => learned.has(id) || id === entry.id);
+      playSfx(willComplete ? 'fanfare' : 'tap');
+      if (willComplete) confetti(null, { count: 50, spread: 300 });
+    } else playSfx('next');
     const nextIdx = ids.findIndex((id, i) => i > index && !learned.has(id) && id !== entry.id);
     if (nextIdx >= 0) setIndex(nextIdx);
     else if (index + 1 < ids.length) setIndex(index + 1);

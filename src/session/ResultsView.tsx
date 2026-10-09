@@ -8,6 +8,9 @@ import type { GradedResult } from '../modes/types';
 import { useStore } from '../state/store';
 import { ACHIEVEMENTS } from '../core/achievements';
 import { formatDue } from '../ui/format';
+import { useEffect, useRef } from 'react';
+import { confetti } from '../ui/fx';
+import { playSfx } from '../ui/sfx';
 
 export interface SessionOutcome {
   summary: SessionSummary;
@@ -43,10 +46,19 @@ export function ResultsView({ outcome, onExit, onReplay }: Props) {
     .sort((a, b) => a.dueAt - b.dueAt);
   const unlocked = ACHIEVEMENTS.filter((a) => (data.achievements[a.id] ?? 0) >= summary.startedAt);
   const t = now();
+  const heroRef = useRef<HTMLElement>(null);
+  const great = accuracy.value !== undefined && accuracy.value >= 0.8;
+  useEffect(() => {
+    playSfx(great ? 'fanfare' : 'complete');
+    if (great || outcome.completed) confetti(heroRef.current, { count: great ? 48 : 24, spread: great ? 280 : 180 });
+    const timer = unlocked.length ? setTimeout(() => playSfx('achievement'), 750) : undefined;
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="results">
-      <section className="card results-hero">
+      <section className="card results-hero" ref={heroRef}>
         <h2>{summary.graded === 0 ? 'Session ended' : accuracy.value !== undefined && accuracy.value >= 0.8 ? '🏆 Great work!' : '💪 Session complete'}</h2>
         <div className="metric-row">
           <div className="metric">

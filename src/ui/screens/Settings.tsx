@@ -6,6 +6,7 @@ import type { DailyGoal, LearnerLevel, ReviewWeights } from '../../core/types';
 import { useStore } from '../../state/store';
 import { useAudio } from '../audio';
 import { TEST_PHRASE } from '../speechKey';
+import { playSfx } from '../sfx';
 
 const WEIGHT_LABEL: Record<keyof ReviewWeights, string> = {
   mistakes: 'Mistakes & unsure', due: 'Due reviews', weak: 'Weak words', reinforcement: 'Reinforcement / random',
@@ -117,6 +118,26 @@ export function Settings() {
         <button type="button" className="btn small" disabled={!audio.available} onClick={() => audio.speak(TEST_PHRASE)}>
           ▶ Test sound
         </button>
+      </section>
+
+      <section className="card">
+        <h2>🎵 Sound effects · Âm thanh hiệu ứng</h2>
+        <label className="toggle">
+          <input type="checkbox" checked={settings.sfx} onChange={(e) => store.updateSettings({ sfx: e.target.checked })} />
+          <span>Play sounds for correct / wrong answers, taps and Next</span>
+        </label>
+        <label className="field">
+          Effects volume: {Math.round(settings.sfxVolume * 100)}%
+          <input type="range" min={0} max={1} step={0.1} value={settings.sfxVolume} disabled={!settings.sfx}
+            onChange={(e) => store.updateSettings({ sfxVolume: Number(e.target.value) })} />
+        </label>
+        <div className="row">
+          <button type="button" className="btn small" disabled={!settings.sfx} onClick={() => playSfx('correct')}>✅ Correct</button>
+          <button type="button" className="btn small" disabled={!settings.sfx} onClick={() => playSfx('wrong')}>❌ Wrong</button>
+          <button type="button" className="btn small" disabled={!settings.sfx} onClick={() => playSfx('combo', 5)}>🔥 Combo</button>
+          <button type="button" className="btn small" disabled={!settings.sfx} onClick={() => playSfx('fanfare')}>🏆 Finish</button>
+        </div>
+        <p className="muted small">Confetti and animations follow the “Reduce motion” setting above.</p>
       </section>
 
       <section className="card">

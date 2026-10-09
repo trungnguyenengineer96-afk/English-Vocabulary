@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { playSfx } from '../ui/sfx';
 import { overlaps } from '../core/distractors';
 import { shuffle } from '../core/rng';
 import type { VocabEntry } from '../core/types';
@@ -49,6 +50,7 @@ function MemoryFlip({ question, runtime, report, done, revealed }: ModeProps<Q>)
 
   const flip = (c: Card) => {
     if (revealed || busy.current || matched.has(c.pairId) || open.includes(c.id)) return;
+    playSfx('flip');
     const next = [...open, c.id];
     setOpen(next);
     if (next.length < 2) return;

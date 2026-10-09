@@ -4,6 +4,7 @@ import { SessionPlayer } from '../session/SessionPlayer';
 import { reviewPlan } from '../session/launch';
 import { useStore } from '../state/store';
 import { AudioProvider, useAudio } from './audio';
+import { configureSfx } from './sfx';
 import { NavProvider, useNav, type Route } from './nav';
 import { Dashboard } from './screens/Dashboard';
 import { Learn } from './screens/Learn';
@@ -29,6 +30,9 @@ function Shell() {
   useEffect(() => {
     document.documentElement.classList.toggle('reduce-motion', reduce);
   }, [reduce]);
+  useEffect(() => {
+    configureSfx({ enabled: data.settings.sfx, volume: data.settings.sfxVolume });
+  }, [data.settings.sfx, data.settings.sfxVolume]);
 
   const inSession = route === 'session' && plan;
   return (

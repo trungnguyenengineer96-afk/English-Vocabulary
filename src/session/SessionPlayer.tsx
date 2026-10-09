@@ -7,6 +7,8 @@ import { MODE_BY_ID, SKILL_LABEL } from '../modes/registry';
 import type { GradedResult, ModeRuntime } from '../modes/types';
 import { useStore } from '../state/store';
 import { useAudio } from '../ui/audio';
+import { confetti } from '../ui/fx';
+import { playSfx } from '../ui/sfx';
 import { FeedbackPanel } from './FeedbackPanel';
 import type { SessionPlan } from './planner';
 import { ResultsView, type SessionOutcome } from './ResultsView';
@@ -27,7 +29,8 @@ export function SessionPlayer({ plan, onExit, onReplay }: Props) {
   const [gains, setGains] = useState<Record<string, number>>({});
   const [score, setScore] = useState<ScoreState>(initialScore);
   const [outcome, setOutcome] = useState<SessionOutcome | null>(null);
-  const [pop, setPop] = useState<{ id: number; ok: boolean } | null>(null);
+  const [pop, setPop] = useState<{ id: number; ok: boolean; gained: number; combo: number } | null>(null);
+  const cardRef = useRef<HTMLElement>(null);
   const startedAt = useRef(store.now());
   const scoreRef = useRef(score);
   scoreRef.current = score;
@@ -75,7 +78,12 @@ export function SessionPlayer({ plan, onExit, onReplay }: Props) {
       setScore(state);
       setResults(resultsRef.current);
       setGains((g) => ({ ...g, [r.vocabId]: gained }));
-      setPop({ id: Date.now(), ok: r.result === 'correct' });
+      const ok = r.result === 'correct';
+      const milestone = ok && (state.combo === 3 || state.combo === 5 || (state.combo >= 10 && state.combo % 5 === 0));
+      setPop({ id: Date.now(), ok, gained, combo: milestone ? state.combo : 0 });
+      playSfx(ok ? 'correct' : 'wrong');
+      if (milestone) setTimeout(() => playSfx('combo', state.combo), 140);
+      if (ok && (q.targetIds.length === 1 || milestone)) confetti(cardRef.current, { count: milestone ? 26 : 12, spread: milestone ? 180 : 110 });
     },
     [q, mode, store, plan.id],
   );
@@ -119,6 +127,7 @@ export function SessionPlayer({ plan, onExit, onReplay }: Props) {
   }, [plan, store, startCategory]);
 
   const next = () => {
+    playSfx('next');
     if (index + 1 >= plan.questions.length) finish();
     else {
       setIndex(index + 1);
@@ -202,7 +211,7 @@ export function SessionPlayer({ plan, onExit, onReplay }: Props) {
           {round.skill ? ` · ${SKILL_LABEL[round.skill].icon} ${SKILL_LABEL[round.skill].name}` : ` · ${round.title}`}
         </p>
       )}
-      <section className="card mode-card" aria-labelledby="mode-title">
+      <section key={q.key} ref={cardRef} className={`card mode-card ${motion ? 'enter' : ''}`} aria-labelledby="mode-title">
         <div className="mode-title-row">
           <h2 id="mode-title" tabIndex={-1}>
             <span aria-hidden="true">{mode.icon}</span> {mode.name}
@@ -217,7 +226,12 @@ export function SessionPlayer({ plan, onExit, onReplay }: Props) {
             </button>
           </div>
         )}
-        {pop && motion && <span key={pop.id} className={`pop ${pop.ok ? 'ok' : 'no'}`} aria-hidden="true">{pop.ok ? '+' : '·'}</span>}
+        {pop && motion && pop.ok && pop.gained > 0 && (
+          <span key={pop.id} className="gain-float" aria-hidden="true">+{pop.gained}</span>
+        )}
+        {pop && pop.combo > 0 && (
+          <span key={`c${pop.id}`} className="combo-toast" role="status">🔥 Combo ×{pop.combo}!</span>
+        )}
       </section>
       <div aria-live="polite" className="sr-only">
         {revealed && qResults.map(({ id, r }) => `${VOCAB.get(id)?.word}: ${r ? (r.result === 'correct' ? 'correct' : r.result === 'unsure' ? 'not sure' : 'incorrect') : 'not graded'}.`).join(' ')}

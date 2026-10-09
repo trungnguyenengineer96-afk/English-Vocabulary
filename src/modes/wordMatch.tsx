@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { playSfx } from '../ui/sfx';
 import { overlaps } from '../core/distractors';
 import { shuffle } from '../core/rng';
 import type { VocabEntry } from '../core/types';
@@ -58,7 +59,11 @@ function WordMatch({ question, report, done, revealed }: ModeProps<Q>) {
                 className={`match-card ${selected === t.id ? 'is-selected' : ''} ${matched.has(t.id) ? 'is-matched' : ''} ${flash?.word === t.id ? 'is-wrong' : ''}`}
                 aria-pressed={selected === t.id}
                 aria-disabled={done_}
-                onClick={() => !done_ && setSelected(t.id)}
+                onClick={() => {
+                  if (done_) return;
+                  playSfx('tap');
+                  setSelected(t.id);
+                }}
               >
                 {t.word}
                 {revealed && !matched.has(t.id) && <span className="pair-reveal"> = {meaningText(t)}</span>}

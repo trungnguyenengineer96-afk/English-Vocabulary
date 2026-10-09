@@ -77,7 +77,7 @@ describe('App end-to-end loop (jsdom)', () => {
     const idx = options.findIndex((o) => o.textContent?.includes('quả táo'));
     await user.keyboard(String(idx + 1));
     expect(screen.getByText('Correct')).toBeInTheDocument();
-    expect(screen.getByText('+10')).toBeInTheDocument();
+    expect(within(screen.getByRole('region', { name: 'Feedback' })).getByText('+10')).toBeInTheDocument();
   });
 });
 

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { playSfx } from '../ui/sfx';
 import { sample, shuffle } from '../core/rng';
 import type { VocabEntry } from '../core/types';
 import { Instruction, WordHeading } from './shared';
@@ -42,7 +43,11 @@ function OppositeSimilar({ question, runtime, report, done, revealed }: ModeProp
                     role="radio"
                     aria-checked={p === b}
                     className={`chip ${p === b ? 'active' : ''}`}
-                    onClick={() => !revealed && setPlaced({ ...placed, [c.word]: b })}
+                    onClick={() => {
+                      if (revealed) return;
+                      playSfx('tap');
+                      setPlaced({ ...placed, [c.word]: b });
+                    }}
                   >
                     {b === 'similar' ? '≈ Similar' : '⇄ Opposite'}
                   </button>

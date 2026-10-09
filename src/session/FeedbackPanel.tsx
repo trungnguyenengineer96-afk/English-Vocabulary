@@ -3,6 +3,7 @@ import { VOCAB } from '../data/words';
 import { POS_SHORT, meaningText } from '../modes/shared';
 import type { GradedResult, ModeRuntime } from '../modes/types';
 import { AudioButton } from '../ui/components/AudioButton';
+import { MASCOT, mascotLine, type MascotMood } from '../ui/mascot';
 
 interface Props {
   items: { id: string; r?: GradedResult; gained: number }[];
@@ -15,8 +16,16 @@ const LABEL = { correct: 'Correct', wrong: 'Not quite', unsure: "Marked as I don
 /** Immediate feedback after each question: the right answer, what was given, and the example. */
 export function FeedbackPanel({ items, runtime, children }: Props) {
   const allOk = items.every((i) => i.r?.result === 'correct');
+  const anyOk = items.some((i) => i.r?.result === 'correct');
+  const allUnsure = items.every((i) => i.r?.result === 'unsure');
+  const mood: MascotMood = allOk ? 'correct' : allUnsure ? 'unsure' : anyOk ? 'mixed' : 'wrong';
+  const seed = items.reduce((s, i) => s + i.id.length * 7 + i.id.charCodeAt(0), 0);
   return (
     <section className={`card feedback ${allOk ? 'ok' : 'review'}`} aria-label="Feedback">
+      <div className={`mascot ${allOk ? 'happy' : ''}`}>
+        <span className="mascot-face" aria-hidden="true">{MASCOT}</span>
+        <span className="mascot-bubble" lang="vi">{mascotLine(mood, seed)}</span>
+      </div>
       <ul className="feedback-list">
         {items.map(({ id, r, gained }) => {
           const e = VOCAB.get(id);

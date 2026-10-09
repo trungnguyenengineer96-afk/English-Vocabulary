@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { playSfx } from '../sfx';
 
 export interface Tile {
   id: string;
@@ -28,9 +29,14 @@ export function TileBuilder({ tiles, answer, revealed, onSubmit, joiner = ' ', t
 
   const add = (id: string) => {
     if (revealed || placed.includes(id) || placed.length >= answer.length) return;
+    playSfx('tap');
     setPlaced([...placed, id]);
   };
-  const remove = (id: string) => !revealed && setPlaced(placed.filter((p) => p !== id));
+  const remove = (id: string) => {
+    if (revealed) return;
+    playSfx('flip');
+    setPlaced(placed.filter((p) => p !== id));
+  };
 
   useEffect(() => {
     if (!typeToPick || revealed) return;

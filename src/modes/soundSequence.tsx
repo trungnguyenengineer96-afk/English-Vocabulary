@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { playSfx } from '../ui/sfx';
 import { overlaps, pickDistractors } from '../core/distractors';
 import { shuffle } from '../core/rng';
 import type { VocabEntry } from '../core/types';
@@ -64,7 +65,10 @@ function SoundSequence({ question, runtime, report, done, revealed }: ModeProps<
             className="tile"
             lang="en"
             disabled={revealed || seq.includes(t.id) || seq.length >= targets.length}
-            onClick={() => setSeq([...seq, t.id])}
+            onClick={() => {
+              playSfx('tap');
+              setSeq([...seq, t.id]);
+            }}
           >
             {t.word}
           </button>

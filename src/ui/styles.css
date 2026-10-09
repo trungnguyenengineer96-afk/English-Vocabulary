@@ -589,3 +589,34 @@ mark.highlight { background: #ffe066; color: #1f1b3a; border-radius: 6px; paddin
 .achievements li.locked { opacity: 1; background: transparent; border: 2px dashed var(--border); }
 .achievements li.locked .ach-icon { filter: grayscale(1); }
 .achievements li.unlocked { border: 2px solid var(--good); }
+
+/* ── Effects ─────────────────────────────────────────── */
+.fx-layer { position: fixed; inset: 0; pointer-events: none; z-index: 100; overflow: hidden; }
+.confetti { position: absolute; width: 9px; height: 13px; border-radius: 2px; animation: confetti 1.1s cubic-bezier(.2,.7,.4,1) forwards; }
+.confetti.round { border-radius: 50%; width: 9px; height: 9px; }
+@keyframes confetti {
+  0% { transform: translate(-50%, -50%) rotate(0); opacity: 1; }
+  80% { opacity: 1; }
+  100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy) + 140px)) rotate(var(--rot)); opacity: 0; }
+}
+.mode-card.enter { animation: slideIn 0.32s cubic-bezier(.2,.8,.3,1); }
+@keyframes slideIn { from { opacity: 0; transform: translateX(28px) scale(.98); } to { opacity: 1; transform: none; } }
+.option.is-correct { box-shadow: 0 0 0 4px rgba(20,147,90,.18), 0 0 22px rgba(20,147,90,.35); }
+.combo-toast { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); z-index: 5; pointer-events: none;
+  background: linear-gradient(90deg, #ff9f1c, #ff4d6d); color: #fff; font-weight: 900; font-size: 1.15rem;
+  padding: .35rem 1.1rem; border-radius: 999px; box-shadow: 0 6px 18px rgba(255,77,109,.45); animation: comboPop 1.2s ease forwards; white-space: nowrap; }
+@keyframes comboPop { 0% { opacity: 0; transform: translate(-50%, 10px) scale(.6); } 15% { opacity: 1; transform: translate(-50%, 0) scale(1.12); }
+  30% { transform: translate(-50%, 0) scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -14px); } }
+.gain-float { position: absolute; right: 1.2rem; top: .9rem; color: var(--good); font-weight: 900; font-size: 1.3rem; pointer-events: none; animation: floatUp .9s ease forwards; }
+.mascot { display: flex; align-items: center; gap: .6rem; margin-bottom: .6rem; }
+.mascot-face { font-size: 2.2rem; line-height: 1; animation: bob 1.6s ease-in-out infinite; }
+.mascot-bubble { position: relative; background: var(--surface-2); border-radius: 14px; padding: .35rem .8rem; font-weight: 800; }
+.mascot-bubble::before { content: ''; position: absolute; left: -7px; top: 50%; transform: translateY(-50%); border: 7px solid transparent; border-right-color: var(--surface-2); border-left: 0; }
+.mascot.happy .mascot-face { animation: hop .5s ease 2; }
+@keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+@keyframes hop { 0%,100% { transform: translateY(0); } 40% { transform: translateY(-10px) rotate(-6deg); } }
+.bar-fill { position: relative; overflow: hidden; }
+.bar-fill::after { content: ''; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 20%, rgba(255,255,255,.45) 50%, transparent 80%); transform: translateX(-100%); animation: shine 2.4s ease-in-out infinite; }
+@keyframes shine { 60%, 100% { transform: translateX(100%); } }
+.btn.primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 5px 0 rgba(0,0,0,.15); }
+.tile:not(:disabled):active, .match-card:active, .memory-card:active, .door:active { transform: scale(.95); }

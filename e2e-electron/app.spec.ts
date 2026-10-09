@@ -13,6 +13,11 @@ test('desktop app loads, learns words and keeps progress after restart', async (
   let app = await launch();
   let win = await app.firstWindow();
   await expect(win).toHaveTitle('Vocab Quest');
+  // First launch: create a profile, skip the placement test.
+  await win.getByLabel('Tên của bạn').fill('Desk');
+  await win.getByRole('button', { name: /Tạo hồ sơ/ }).click();
+  await win.getByRole('button', { name: /Bỏ qua, tôi tự chọn trình độ/ }).click();
+  await win.getByRole('button', { name: /Trung cấp/ }).click();
   await win.getByRole('button', { name: 'Start learning' }).click();
   await win.getByRole('radio', { name: '7' }).click();
   for (let i = 0; i < 7; i++) await win.getByRole('button', { name: /Got it|Next →/ }).click();
@@ -42,6 +47,9 @@ test('desktop app loads, learns words and keeps progress after restart', async (
 
   app = await launch();
   win = await app.firstWindow();
+  // Every launch starts at the profile picker.
+  await expect(win.getByText('Hôm nay ai học nào?')).toBeVisible();
+  await win.locator('.profile-open', { hasText: 'Desk' }).click();
   await win.getByRole('button', { name: 'Home', exact: true }).click();
   await expect(win.getByLabel('7 of 7 new words learned today')).toBeVisible();
   await win.getByRole('button', { name: 'Library', exact: true }).click();

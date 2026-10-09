@@ -50,6 +50,11 @@ The e2e suite builds the app and serves it on port 4174. It runs on desktop Chro
 
 ### Key behaviours
 
+- **Learner profiles:** each time the app opens, the learner picks their profile ("Hôm nay ai học nào?") or creates one with a name, an avatar and a colour. Every profile has fully separate progress. Data from the single-user version becomes "Người học 1", and a backup copy is kept.
+- **Placement test (bài kiểm tra đầu vào):** a 3-question survey (goals, minutes per day, self-rating) followed by an adaptive test of 12–20 questions across reading, listening and writing. It uses an IRT model with a guessing correction and an EAP ability estimate. The result (A1–C1) sets the difficulty of new words (centred just above the learner's level), favours their topics, sets the daily goal, saves words they already know, and makes reviews favour their weakest skill. Design: [`docs/DESIGN_PROFILES_PLACEMENT_FX.md`](docs/DESIGN_PROFILES_PLACEMENT_FX.md).
+- **Learning path and quests:** a 5-stage A1→C1 map with learned/mastered progress and checkpoint tests for each stage, plus a "today's quests" checklist on the dashboard (review, new words, weak-skill game, optional Mixed Challenge).
+- **Effects:** sound effects synthesised with Web Audio (tap, correct, wrong, combo, next, fanfare, achievement), with an on/off switch and volume. Visual effects include confetti, combo toasts, a floating "+points", slide-in transitions and an owl mascot that reacts in Vietnamese. All animation respects Reduce motion.
+
 - **Daily words:** choose 7, 10, 20 or 30 per day. Picks are seeded per date. Two words that sit next to each other in the source list, words with the same spelling, and mutual synonyms never land on the same day, and no topic takes more than 30% of the day. Difficulty follows your level, and common words are preferred.
 - **Library:** keyed by word id, so a word can never be saved twice. Search folds Vietnamese diacritics. You can filter by state, topic, favourites or due date, sort the list, select words for a manual review, and add words from the word bank.
 - **Adaptive review:** 20 distinct words by default. Selection weights are tunable (default 40% mistakes, 30% due, 20% weak, 10% reinforcement). When a category runs short, the other categories fill in. The app never invents words, so a small library gives a shorter test.

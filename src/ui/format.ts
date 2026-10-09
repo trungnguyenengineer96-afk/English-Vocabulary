@@ -15,3 +15,10 @@ export function relativeDay(ts: number, now: number): string {
   if (d === 1) return 'yesterday';
   return `${d} days ago`;
 }
+
+export function relativeDayVi(ts: number, now: number): string {
+  const d = daysBetween(dayKey(ts), dayKey(now));
+  if (d <= 0) return 'hôm nay';
+  if (d === 1) return 'hôm qua';
+  return `${d} ngày trước`;
+}

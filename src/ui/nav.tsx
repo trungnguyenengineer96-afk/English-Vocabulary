@@ -1,8 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { SessionPlan } from '../session/planner';
 
-export type Route = 'home' | 'learn' | 'library' | 'play' | 'progress' | 'settings' | 'session';
-const ROUTES: Route[] = ['home', 'learn', 'library', 'play', 'progress', 'settings', 'session'];
+export type Route = 'home' | 'learn' | 'library' | 'play' | 'path' | 'progress' | 'settings' | 'session' | 'placement';
+const ROUTES: Route[] = ['home', 'learn', 'library', 'play', 'path', 'progress', 'settings', 'session', 'placement'];
 
 interface NavValue {
   route: Route;
@@ -18,8 +18,12 @@ function parseHash(): Route {
   return ROUTES.includes(h) ? h : 'home';
 }
 
-export function NavProvider({ children }: { children: ReactNode }) {
+export function NavProvider({ children, initialRoute }: { children: ReactNode; initialRoute?: Route }) {
   const [route, setRoute] = useState<Route>(() => {
+    if (initialRoute) {
+      window.location.hash = `/${initialRoute}`;
+      return initialRoute;
+    }
     const r = parseHash();
     return r === 'session' ? 'home' : r; // a session cannot be restored from the URL
   });

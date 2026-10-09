@@ -1,7 +1,9 @@
 import { expect, test } from '@playwright/test';
+import { enterApp } from './helpers';
 
 test('Mixed Challenge: 20 distinct words over 4 rounds, results with skill breakdown and review queue', async ({ page }) => {
-  await page.goto('/#/library');
+  await enterApp(page);
+  await page.getByRole('button', { name: 'Library', exact: true }).click();
   await page.getByRole('button', { name: /Browse word bank/ }).click();
   for (let i = 0; i < 25; i++) await page.locator('.bank-list .btn').nth(i % 5).click();
   await page.getByRole('button', { name: 'Play', exact: true }).click();

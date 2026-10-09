@@ -1,4 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
+import { enterApp } from './helpers';
 import { expect, test, type Page } from '@playwright/test';
 
 async function audit(page: Page, label: string) {
@@ -9,6 +10,8 @@ async function audit(page: Page, label: string) {
 
 test('main screens and a session have no WCAG A/AA violations', async ({ page }) => {
   await page.goto('/');
+  await audit(page, 'picker-first-run');
+  await enterApp(page);
   await audit(page, 'home-empty');
   await page.getByRole('button', { name: 'Start learning' }).click();
   await audit(page, 'learn');
@@ -35,7 +38,8 @@ test('main screens and a session have no WCAG A/AA violations', async ({ page })
 test.describe('dark mode', () => {
   test.use({ colorScheme: 'dark' });
   test('home and play have sufficient contrast in dark mode', async ({ page }) => {
-    await page.goto('/#/learn');
+    await enterApp(page);
+    await page.getByRole('button', { name: 'Learn', exact: true }).click();
     for (let i = 0; i < 10; i++) await page.getByRole('button', { name: /Got it|Next →/ }).click();
     await page.getByRole('button', { name: 'Home', exact: true }).click();
     await audit(page, 'home-dark');

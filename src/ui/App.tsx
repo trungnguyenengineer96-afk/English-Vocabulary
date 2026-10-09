@@ -6,6 +6,9 @@ import { useStore } from '../state/store';
 import { AudioProvider, useAudio } from './audio';
 import { configureSfx } from './sfx';
 import { NavProvider, useNav, type Route } from './nav';
+import { useProfile } from './profiles/ProfileContext';
+import { Path } from './screens/Path';
+import { Placement } from './screens/Placement';
 import { Dashboard } from './screens/Dashboard';
 import { Learn } from './screens/Learn';
 import { Library } from './screens/Library';
@@ -18,6 +21,7 @@ const TABS: { route: Route; label: string; icon: string }[] = [
   { route: 'learn', label: 'Learn', icon: '🌱' },
   { route: 'library', label: 'Library', icon: '📚' },
   { route: 'play', label: 'Play', icon: '🎮' },
+  { route: 'path', label: 'Path', icon: '🗺️' },
   { route: 'progress', label: 'Progress', icon: '🏅' },
   { route: 'settings', label: 'Settings', icon: '⚙️' },
 ];
@@ -34,15 +38,26 @@ function Shell() {
     configureSfx({ enabled: data.settings.sfx, volume: data.settings.sfxVolume });
   }, [data.settings.sfx, data.settings.sfxVolume]);
 
-  const inSession = route === 'session' && plan;
+  const profile = useProfile();
+  const inSession = (route === 'session' && plan) || route === 'placement';
   return (
     <div className="app">
       <a className="skip-link" href="#main">Skip to content</a>
       {!inSession && (
         <header className="topbar">
-          <button type="button" className="brand" onClick={() => go('home')}>
-            <span aria-hidden="true">🧭</span> Vocab Quest
-          </button>
+          <div className="brand-row">
+            <button type="button" className="brand" onClick={() => go('home')}>
+              <span aria-hidden="true">🧭</span> Vocab Quest
+            </button>
+            {profile && (
+              <button type="button" className="profile-chip" style={{ ['--pc' as string]: profile.profile.color }}
+                onClick={profile.switchProfile} aria-label={`Đổi người học (đang là ${profile.profile.name})`} title="Đổi người học">
+                <span aria-hidden="true">{profile.profile.avatar}</span>
+                <span className="profile-chip-name">{profile.profile.name}</span>
+                <span aria-hidden="true">⇄</span>
+              </button>
+            )}
+          </div>
           <nav aria-label="Main">
             <ul className="tabs">
               {TABS.map((t) => (
@@ -69,7 +84,9 @@ function Shell() {
         </div>
       )}
       <main id="main" tabIndex={-1}>
-        {inSession ? (
+        {route === 'placement' ? (
+          <Placement />
+        ) : route === 'session' && plan ? (
           <SessionPlayer
             key={plan.id}
             plan={plan}
@@ -82,6 +99,8 @@ function Shell() {
           <Library />
         ) : route === 'play' ? (
           <Play />
+        ) : route === 'path' ? (
+          <Path />
         ) : route === 'progress' ? (
           <Progress />
         ) : route === 'settings' ? (
@@ -99,11 +118,11 @@ function Shell() {
   );
 }
 
-export function App({ forceAudio }: { forceAudio?: boolean }) {
+export function App({ forceAudio, initialRoute }: { forceAudio?: boolean; initialRoute?: Route }) {
   const { data } = useStore();
   return (
     <AudioProvider rate={data.settings.speechRate} forceAvailable={forceAudio}>
-      <NavProvider>
+      <NavProvider initialRoute={initialRoute}>
         <Shell />
       </NavProvider>
     </AudioProvider>

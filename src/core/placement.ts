@@ -15,6 +15,8 @@ export const MAX_ITEMS = 20;
 export const MIN_ITEMS = 12;
 export const SE_STOP = 0.3;
 export const PRIOR_SD = 1.2;
+/** Starting confidence for words answered correctly in the placement test. */
+export const PLACEMENT_CONFIDENCE = 0.5;
 const GRID = Array.from({ length: 101 }, (_, i) => 0.5 + i * 0.05);
 
 export const KIND_SKILL: Record<PlacementKind, 'reading' | 'listening' | 'writing'> = {
@@ -183,10 +185,9 @@ export function applyPlacement(d: AppData, r: PlacementResult, now: number): App
     const before = library[a.vocabId];
     library = addToLibrary(library, a.vocabId, now, 'placement');
     if (!before) {
-      library = {
-        ...library,
-        [a.vocabId]: applyAnswer(library[a.vocabId], { result: 'correct', now, mode: 'placement', skill: KIND_SKILL[a.kind] }),
-      };
+      const item = applyAnswer(library[a.vocabId], { result: 'correct', now, mode: 'placement', skill: KIND_SKILL[a.kind] });
+      // Shown to be known, so not "weak" — but still reviewed tomorrow to confirm.
+      library = { ...library, [a.vocabId]: { ...item, confidence: Math.max(item.confidence, PLACEMENT_CONFIDENCE) } };
     }
   }
   // Re-plan today's new words with the new settings unless learning already started.

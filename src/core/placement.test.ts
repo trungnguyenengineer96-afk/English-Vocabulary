@@ -4,6 +4,7 @@ import {
   MAX_ITEMS, applyPlacement, cefrOf, estimate, kindFor, pCorrect, pKnow, pickItem, shouldStop, summarize,
 } from './placement';
 import { defaultData } from './storage';
+import { categorize } from './selection';
 import type { PlacementAnswer, PlacementKind } from './types';
 
 const NOW = new Date(2026, 9, 9, 9).getTime();
@@ -124,6 +125,8 @@ describe('placement model', () => {
     expect(Object.keys(d.library)).toEqual(['apple-n']);
     expect(d.library['apple-n'].source).toBe('placement');
     expect(d.library['apple-n'].reps).toBe(1);
+    expect(d.library['apple-n'].confidence).toBe(0.5);
+    expect(categorize(d.library['apple-n'], NOW + 60_000)).not.toBe('weak');
     expect(d.settings.dailyGoal).toBe(20);
     expect(d.settings.autoLevel).toBe(true);
     expect(d.settings.interests).toEqual(expect.arrayContaining(['travel', 'work', 'business']));

@@ -32,6 +32,8 @@ Last verified on 2026-10-09 with `npm run check` (typecheck plus **184 Vitest te
 
 - **Bundled pronunciation audio (0.1.1):** every word, confusable word and example sentence has a clip (a test enforces this). All 30 modes, including the 7 listening modes, launch and pass axe in the production build. In the Electron app, clicking a speaker button plays a bundled MP3 from `file://` to the end. (`words.test.ts`, `e2e/modes.spec.ts`, `e2e-electron/app.spec.ts`)
 
+- **v0.2.0 profiles, placement, path and effects:** placement model tests include simulated learners placed at the right level, "I don't know" never scoring worse than a wrong answer, the stopping rule, per-skill scores and applying results. Profile tests cover the registry, the single-user migration and deleted-data backups. Also tested: the personalised daily mix and interest boost, the weak skill, path stages and quests, every sound effect and the off switch, and the combo toast and mascot (jsdom). E2E (desktop + mobile) covers profile → survey → adaptive test → result → path → quests → reopen, separate progress per profile, the upgrade keeping single-user data, and axe audits of every new screen. The Electron test now goes through the picker. (`placement.test.ts`, `profiles.test.ts`, `path.test.ts`, `sfx.test.ts`, `e2e/placement.spec.ts`)
+
 ## FAIL
 
 - None known.
@@ -47,6 +49,9 @@ Last verified on 2026-10-09 with `npm run check` (typecheck plus **184 Vitest te
 - **CI:** no GitHub Actions workflow has been added.
 
 ## UNVERIFIED (not testable here)
+
+- **Placement accuracy with real learners:** the model is checked against simulated learners only. Word difficulty bands come from the hand-assigned CEFR levels, not calibrated item statistics.
+- **How the sound effects sound:** they are synthesised; the tests confirm they play without errors, but no one has listened to them.
 
 - **Running the installer on Windows:** no Windows machine is available, so installing, the shortcuts, uninstalling, the SmartScreen prompt and Windows speech voices in the desktop app are untested. The installer is unsigned.
 

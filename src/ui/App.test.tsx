@@ -95,3 +95,26 @@ describe('cross-tab safety', () => {
     expect(screen.getByText('777 XP total')).toBeInTheDocument();
   });
 });
+
+describe('session effects', () => {
+  it('three correct answers in a row show the combo toast and a happy mascot', async () => {
+    const { VOCAB } = await import('../data/words');
+    const user = userEvent.setup();
+    const store = new MemStore();
+    window.location.hash = '#/home';
+    mount(store);
+    await user.click(screen.getByRole('button', { name: /Library/ }));
+    await user.click(screen.getByRole('button', { name: /Browse word bank/ }));
+    for (const w of ['apple', 'happy', 'house']) await user.click(screen.getByRole('button', { name: `Add ${w}` }));
+    await user.click(screen.getByRole('button', { name: /Play/ }));
+    await user.click(screen.getByRole('button', { name: /Meaning Hunter/ }));
+    for (let i = 0; i < 3; i++) {
+      const word = document.querySelector('.big-word')!.textContent!;
+      const entry = [...VOCAB.values()].find((e) => e.word === word)!;
+      await user.click(screen.getByRole('button', { name: new RegExp(entry.meaningsVi.join(', ')) }));
+      if (i < 2) await user.click(screen.getByRole('button', { name: /^Next/ }));
+    }
+    expect(screen.getByText('🔥 Combo ×3!')).toBeInTheDocument();
+    expect(document.querySelector('.mascot.happy')).not.toBeNull();
+  });
+});

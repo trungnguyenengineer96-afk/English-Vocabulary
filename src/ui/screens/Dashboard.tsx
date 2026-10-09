@@ -8,6 +8,14 @@ import { useStore } from '../../state/store';
 import { useAudio } from '../audio';
 import { useNav } from '../nav';
 import { StateBar } from '../components/StateBar';
+import { useProfile } from '../profiles/ProfileContext';
+import { CEFR_INFO } from '../../core/placement';
+import { weakSkill } from '../../core/personalize';
+import { todaysQuests, type Quest } from '../../core/quests';
+import { MODES, MODE_BY_ID, SKILL_LABEL } from '../../modes/registry';
+import { eligibleCount, modePlan } from '../../session/launch';
+import type { Skill } from '../../core/types';
+import { playSfx } from '../sfx';
 
 export function Dashboard() {
   const { data, now } = useStore();
@@ -27,12 +35,42 @@ export function Dashboard() {
   const counts = stateCounts(data.library);
 
   const startReview = () => startSession(reviewPlan({ data, now: t, audioAvailable: audio.available }));
+  const profile = useProfile();
+  const env = { data, now: t, audioAvailable: audio.available };
+  const weakSk = weakSkill(data, t);
+  const quests = todaysQuests(data, t, weakSk, (id) => MODE_BY_ID.get(id as never)?.skill);
+  const required = quests.filter((q) => !q.optional);
+  const doneCount = required.filter((q) => q.done).length;
+  /** Least-played mode of the weak skill that has enough suitable words. */
+  const skillGame = (skill?: Skill) => {
+    const pool = MODES.filter((m) => (!skill || m.skill === skill) && eligibleCount(env, m.id) >= (m.minTargets ?? m.targetsPerQuestion));
+    return pool.sort((a, b) => (data.modeStats[a.id]?.played ?? 0) - (data.modeStats[b.id]?.played ?? 0))[0];
+  };
+  const runQuest = (q: Quest) => {
+    playSfx('next');
+    if (q.id === 'review') startReview();
+    else if (q.id === 'learn') go('learn');
+    else if (q.id === 'mixed') startSession(mixedPlan(env, 'mixed'));
+    else {
+      const m = skillGame(q.skill) ?? skillGame();
+      if (m) startSession(modePlan(env, m.id));
+      else go('play');
+    }
+  };
+  const questLabel = (q: Quest) =>
+    q.id === 'review'
+      ? q.done ? 'Không còn từ đến hạn ôn' : `Ôn ${q.count} từ đến hạn`
+      : q.id === 'learn'
+        ? `Học ${q.count} từ mới`
+        : q.id === 'skill'
+          ? q.skill ? `Luyện kỹ năng yếu: ${SKILL_LABEL[q.skill].icon} ${SKILL_LABEL[q.skill].vi}` : 'Chơi 1 trò chơi bất kỳ'
+          : 'Thử thách tổng hợp (tuỳ chọn)';
 
   return (
     <div className="dashboard">
       <section className="hero card">
         <div>
-          <p className="eyebrow">Xin chào, explorer! 🧭</p>
+          <p className="eyebrow">Xin chào, {profile ? profile.profile.name : 'explorer'}! {profile?.profile.avatar ?? '🧭'}</p>
           <h1>Your vocabulary quest</h1>
           <p className="muted">Learn a few new words, review the ones that need you, then play.</p>
         </div>
@@ -41,6 +79,46 @@ export function Dashboard() {
           <div className="bar small"><div className="bar-fill xp" style={{ width: `${(lvl.into / lvl.span) * 100}%` }} /></div>
           <span className="muted small">{data.xp} XP total</span>
         </div>
+      </section>
+
+      {!data.placement && (
+        <section className="card placement-cta" lang="vi">
+          <span className="pc-icon" aria-hidden="true">🎯</span>
+          <div>
+            <h2>Làm bài kiểm tra đầu vào (≈5 phút)</h2>
+            <p className="muted">Để app chọn từ vừa sức, đúng chủ đề bạn thích và ưu tiên kỹ năng cần luyện.</p>
+          </div>
+          <button type="button" className="btn primary" onClick={() => go('placement')}>Bắt đầu kiểm tra</button>
+        </section>
+      )}
+
+      <section className="card quests" lang="vi" aria-labelledby="quests-h">
+        <div className="quests-head">
+          <h2 id="quests-h">⚔️ Nhiệm vụ hôm nay</h2>
+          <span className={`quest-count ${doneCount === required.length ? 'all' : ''}`}>
+            {doneCount === required.length ? '🎉 Hoàn thành!' : `${doneCount}/${required.length}`}
+          </span>
+          {data.placement && (
+            <button type="button" className="btn ghost small" onClick={() => go('path')}>
+              🗺️ {data.placement.cefr} · {CEFR_INFO[data.placement.cefr].vi}
+            </button>
+          )}
+        </div>
+        <ul className="quest-list">
+          {quests.map((q) => (
+            <li key={q.id} className={`quest ${q.done ? 'done' : ''} ${q.optional ? 'optional' : ''}`}>
+              <span className="quest-check" aria-hidden="true">{q.done ? '✅' : q.optional ? '⭐' : '⬜'}</span>
+              <span className="quest-label">{questLabel(q)}</span>
+              {!q.done && (
+                <button type="button" className="btn small" onClick={() => runQuest(q)}
+                  disabled={(q.id !== 'learn' && saved === 0) || (q.id === 'mixed' && saved < 4)}>
+                  Làm ngay
+                </button>
+              )}
+              <span className="sr-only">{q.done ? 'đã xong' : 'chưa xong'}</span>
+            </li>
+          ))}
+        </ul>
       </section>
 
       <div className="action-grid">

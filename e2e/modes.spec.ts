@@ -1,11 +1,13 @@
 import AxeBuilder from '@axe-core/playwright';
+import { enterApp } from './helpers';
 import { expect, test } from '@playwright/test';
 
 test('every available mode launches, is accessible, and can be abandoned', async ({ page }) => {
   test.setTimeout(180_000);
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
-  await page.goto('/#/library');
+  await enterApp(page);
+  await page.getByRole('button', { name: 'Library', exact: true }).click();
   await page.getByRole('button', { name: /Browse word bank/ }).click();
   for (let i = 0; i < 40; i++) await page.locator('.bank-list .btn').nth(i % 4).click();
   await page.getByRole('button', { name: 'Play', exact: true }).click();
@@ -13,7 +15,7 @@ test('every available mode launches, is accessible, and can be abandoned', async
   expect(count).toBe(30);
   const played: string[] = [];
   for (let i = 0; i < count; i++) {
-    await page.goto('/#/play');
+    await page.evaluate(() => (window.location.hash = '/play'));
     const tile = page.locator('.mode-tile').nth(i);
     const name = (await tile.locator('.tile-name').textContent())!.trim();
     await tile.click();

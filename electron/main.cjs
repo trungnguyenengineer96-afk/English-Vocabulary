@@ -16,7 +16,14 @@ function createWindow() {
     backgroundColor: '#f4f1ff',
     autoHideMenuBar: true,
     icon: path.join(__dirname, '..', 'build', 'icon.png'),
-    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true, spellcheck: false },
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+      spellcheck: false,
+      // Listening questions play the word as soon as they appear.
+      autoplayPolicy: 'no-user-gesture-required',
+    },
   });
   win.setMenuBarVisibility(false);
   win.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));

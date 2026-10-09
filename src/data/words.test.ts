@@ -1,5 +1,9 @@
 import { WORDS } from './words';
 import { containsForm, validateEntries } from './validate';
+import manifest from './audio-manifest.json';
+import { existsSync } from 'node:fs';
+import path from 'node:path';
+import { speechKey, TEST_PHRASE } from '../ui/speechKey';
 
 describe('vocabulary dataset', () => {
   it('passes validation', () => {
@@ -41,5 +45,16 @@ describe('vocabulary dataset', () => {
     expect(containsForm('I eat bread.', 'eat')).toBe(true);
     expect(containsForm('The weather is great.', 'eat')).toBe(false);
     expect(containsForm('Artificial intelligence', 'artificial')).toBe(true);
+  });
+
+  it('has a bundled pronunciation clip for every word, confusable and example sentence', () => {
+    const clips = manifest as Record<string, string>;
+    const texts = [TEST_PHRASE, ...WORDS.flatMap((w) => [w.word, ...(w.confusables ?? []), ...(w.example ? [w.example.en] : [])])];
+    const missing = texts.filter((t) => !clips[speechKey(t)]);
+    // Run `npm run audio` after changing the dataset.
+    expect(missing).toEqual([]);
+    for (const file of new Set(Object.values(clips))) {
+      expect(existsSync(path.join(__dirname, '..', '..', 'public', 'audio', file))).toBe(true);
+    }
   });
 });

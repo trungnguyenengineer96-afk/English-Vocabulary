@@ -36,7 +36,7 @@ export function Play() {
           <span>Practice mode (no timers)</span>
         </label>
         {!audio.available && audio.checked && (
-          <p className="notice">🔇 No English speech voice is available in this browser, so listening modes are turned off.</p>
+          <p className="notice">🔇 Audio is unavailable, so listening modes are turned off.</p>
         )}
       </section>
       <section className="card mixed-card" aria-labelledby="mixed-h">

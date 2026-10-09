@@ -1,7 +1,7 @@
 {
   "name": "vocab-quest",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -14,7 +14,8 @@
     "check": "npm run typecheck && npm test",
     "app": "vite build && electron .",
     "dist:win": "node scripts/build-win.mjs",
-    "test:electron": "vite build && playwright test -c playwright.electron.config.ts"
+    "test:electron": "vite build && playwright test -c playwright.electron.config.ts",
+    "audio": "npx tsx scripts/speech-texts.ts > .speech-texts.json && python3 scripts/render-audio.py .speech-texts.json \"${PIPER_MODEL:-voices/en-us-lessac-medium.onnx}\""
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.10.2",

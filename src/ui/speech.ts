@@ -51,11 +51,28 @@ export function speakText(text: string, rate: number): Promise<void> {
   });
 }
 
-export function playUrl(url: string): Promise<boolean> {
+let current: HTMLAudioElement | null = null;
+
+/** Play an audio file; resolves true when it finished, false if it could not play. */
+export function playUrl(url: string, rate = 1): Promise<boolean> {
   return new Promise((resolve) => {
+    if (typeof Audio === 'undefined') return resolve(false);
+    current?.pause();
     const a = new Audio(url);
-    a.onended = () => resolve(true);
-    a.onerror = () => resolve(false);
-    a.play().catch(() => resolve(false));
+    current = a;
+    a.playbackRate = rate;
+    a.preservesPitch = true;
+    const done = (ok: boolean) => {
+      clearTimeout(safety);
+      if (current === a) current = null;
+      resolve(ok);
+    };
+    // Safety net in case neither event fires (e.g. playback interrupted).
+    const safety = setTimeout(() => done(false), 15000);
+    a.onended = () => done(true);
+    a.onerror = () => done(false);
+    a.onpause = () => a.ended || done(false);
+    const p = a.play();
+    if (p && typeof p.catch === 'function') p.catch(() => done(false));
   });
 }

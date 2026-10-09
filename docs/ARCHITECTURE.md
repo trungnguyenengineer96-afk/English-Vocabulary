@@ -20,7 +20,7 @@ browser, so the app works offline. Static hosting is enough to deploy it.
 | Styling | Plain CSS with design tokens (custom properties) | No build-time dependency; easy theming & reduced-motion |
 | Domain logic | Pure TS modules in `src/core` | Deterministic, unit-testable, UI-independent |
 | Persistence | `localStorage`, single versioned document + migration chain + backups | Synchronous, simple, enough for thousands of words (history is capped per word) |
-| Audio | Web Speech API (`speechSynthesis`) with capability detection; optional `audio.url` field | No network/asset dependency; listening modes are disabled when TTS is unavailable |
+| Audio | Pre-rendered MP3 clips (Piper neural TTS, `public/audio` + manifest); Web Speech API only as a fallback | Works offline and without an English system voice (e.g. Vietnamese Windows) |
 | Randomness | Seeded PRNG (mulberry32) | Reproducible selection & tests |
 | Tests | Vitest + Testing Library (jsdom), Playwright e2e | Unit, component and browser coverage |
 

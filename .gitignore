@@ -6,3 +6,5 @@ playwright-report
 *.tsbuildinfo
 .DS_Store
 release
+.speech-texts.json
+voices/

@@ -56,7 +56,8 @@ The e2e suite builds the app and serves it on port 4174. It runs on desktop Chro
 - **States:** New → Learning → Familiar → Mastered. Mastered needs 4 spaced successes and 80% confidence. At the earliest that is day 12.
 - **Mixed Challenge:** 4 rounds of 5 words, one skill per round, with varied mechanics. Focused Reading, Listening and Writing variants are available. Results show accuracy per skill, new weaknesses and the review queue.
 - **Metrics are never mixed:** session completion, session accuracy and library mastery are always shown as separate figures.
-- **Audio:** uses the browser's speech synthesis. The 7 listening modes are turned off when no English voice is available.
+- **Audio:** 516 pronunciation clips (every word, commonly confused word and example sentence) ship with the app, so sound works offline and on Windows without an English system voice. The system's English voice is used only for text that has no clip. After changing the dataset, run `npm run audio` (needs [Piper](https://github.com/rhasspy/piper) and `ffmpeg`; set `PIPER_MODEL`) to render new clips; a test fails if any clip is missing.
+- **Voice license:** the clips were generated with Piper's *Lessac (medium)* voice, trained on the Blizzard 2013 Lessac dataset, whose license restricts commercial use. That is fine for personal learning; re-render the clips with a commercially licensed voice before selling the app.
 - **Data safety:** state is stored in a versioned document with migrations. A backup is written before each migration. Corrupt data is kept in a backup key rather than deleted, and data from a newer app version is opened read-only. Two open tabs stay in sync, and progress can be exported or imported as JSON.
 
 ### Extending the word bank

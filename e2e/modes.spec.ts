@@ -15,7 +15,6 @@ test('every available mode launches, is accessible, and can be abandoned', async
   for (let i = 0; i < count; i++) {
     await page.goto('/#/play');
     const tile = page.locator('.mode-tile').nth(i);
-    if (await tile.isDisabled()) continue; // listening modes without a speech voice
     const name = (await tile.locator('.tile-name').textContent())!.trim();
     await tile.click();
     await expect(page.locator('#mode-title')).toContainText(name);
@@ -25,7 +24,7 @@ test('every available mode launches, is accessible, and can be abandoned', async
     await expect(page.getByRole('button', { name: /^(Next|See results)/ })).toBeFocused();
     played.push(name);
   }
-  // 23 modes need no audio (all except the 7 listening modes).
-  expect(played.length).toBeGreaterThanOrEqual(23);
+  // Bundled pronunciation clips make every mode available, including the 7 listening modes.
+  expect(played.length).toBe(30);
   expect(errors).toEqual([]);
 });

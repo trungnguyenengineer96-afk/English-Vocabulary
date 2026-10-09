@@ -5,6 +5,7 @@ import { exportData, parseImport } from '../../core/storage';
 import type { DailyGoal, LearnerLevel, ReviewWeights } from '../../core/types';
 import { useStore } from '../../state/store';
 import { useAudio } from '../audio';
+import { TEST_PHRASE } from '../speechKey';
 
 const WEIGHT_LABEL: Record<keyof ReviewWeights, string> = {
   mistakes: 'Mistakes & unsure', due: 'Due reviews', weak: 'Weak words', reinforcement: 'Reinforcement / random',
@@ -99,14 +100,22 @@ export function Settings() {
 
       <section className="card">
         <h2>Audio</h2>
-        <p className="muted">{audio.available ? '🔊 English speech voice detected.' : audio.checked ? '🔇 No English speech voice available — listening modes are disabled.' : 'Checking for speech voices…'}</p>
+        <p className="muted">
+          {audio.source === 'clips' || audio.source === 'clips+voice'
+            ? '🔊 Built-in pronunciation audio (works offline, no system voice needed).'
+            : audio.source === 'voice'
+              ? '🔊 Using the system’s English speech voice.'
+              : audio.checked
+                ? '🔇 No audio available — listening modes are disabled.'
+                : 'Checking audio…'}
+        </p>
         <label className="field">
-          Speech rate: {settings.speechRate.toFixed(1)}×
+          Playback speed: {settings.speechRate.toFixed(1)}×
           <input type="range" min={0.5} max={1.5} step={0.1} value={settings.speechRate}
             onChange={(e) => store.updateSettings({ speechRate: Number(e.target.value) })} />
         </label>
-        <button type="button" className="btn small" disabled={!audio.available} onClick={() => audio.speak('Hello! Welcome to Vocab Quest.')}>
-          Test voice
+        <button type="button" className="btn small" disabled={!audio.available} onClick={() => audio.speak(TEST_PHRASE)}>
+          ▶ Test sound
         </button>
       </section>
 

@@ -30,13 +30,15 @@ Last verified on 2026-10-09 with `npm run check` (typecheck plus **184 Vitest te
 - **Desktop shell:** the Electron app loads the built app from disk and keeps progress after it is closed and reopened. This was tested under Xvfb on Linux with the same `electron/main.cjs` the Windows build uses. (`e2e-electron/app.spec.ts`)
 - **Windows installer build:** `npm run dist:win` produces `VocabQuest-Setup-0.1.0.exe` (≈91 MB; an NSIS PE32 installer with no build warnings). The app exe has the icon and version info embedded, and `app.asar` contains only `dist/`, `electron/main.cjs`, the icon and `package.json`.
 
+- **Bundled pronunciation audio (0.1.1):** every word, confusable word and example sentence has a clip (a test enforces this). All 30 modes, including the 7 listening modes, launch and pass axe in the production build. In the Electron app, clicking a speaker button plays a bundled MP3 from `file://` to the end. (`words.test.ts`, `e2e/modes.spec.ts`, `e2e-electron/app.spec.ts`)
+
 ## FAIL
 
 - None known.
 
 ## MISSING (not built)
 
-- **Recorded pronunciation audio:** none ships. Speech synthesis is used, and an optional `audio.url` field is supported by the data model and player but unused by the dataset.
+- **Human-recorded audio:** the bundled clips are synthetic (Piper neural TTS), not recordings of a person.
 - **Pictures:** emoji only, on 37 concrete nouns. There are no photos or illustrations.
 - **Vietnamese UI:** labels and instructions are in English. Meanings, translations and some headings are in Vietnamese.
 - **Word bank size:** 247 hand-authored words, roughly 25 days at 10 words a day. There is no import of external word lists.
@@ -48,7 +50,7 @@ Last verified on 2026-10-09 with `npm run check` (typecheck plus **184 Vitest te
 
 - **Running the installer on Windows:** no Windows machine is available, so installing, the shortcuts, uninstalling, the SmartScreen prompt and Windows speech voices in the desktop app are untested. The installer is unsigned.
 
-- **Real speech output:** the test browser has no speech voices. The 7 listening modes passed axe audits against the dev server with a forced-availability flag, and their logic is unit-tested with a mocked `speak`, but audible playback, voice quality and timing on real devices have not been checked.
+- **How the clips sound:** 516 Piper clips are bundled. Their durations and loudness were checked, and the Electron test confirms a clip plays to the end, but no one has listened to them yet.
 - **Dataset content:** the format is machine-validated, but IPA, Vietnamese meanings and translations, stress positions and collocations were hand-authored and have not been reviewed by a native speaker or linguist.
 - **Real devices and browsers:** only Chromium was tested, at desktop and Pixel 7 sizes. iOS Safari and Firefox were not tested.
 - **Screen-reader experience:** only automated axe checks were run; nothing was tested manually with NVDA or VoiceOver.

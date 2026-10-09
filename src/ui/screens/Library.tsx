@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { queryLibrary, type LibrarySort } from '../../core/library';
 import { recentAccuracy } from '../../core/scheduler';
 import type { LearningState, LibraryItem } from '../../core/types';
@@ -160,7 +160,6 @@ function WordDetail({ item, onClose, onReview }: { item: LibraryItem; onClose: (
   const entry = VOCAB.get(item.vocabId)!;
   const t = store.now();
   const acc = recentAccuracy(item, 10);
-  const ref = useRef<HTMLDialogElement>(null);
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div
@@ -170,7 +169,6 @@ function WordDetail({ item, onClose, onReview }: { item: LibraryItem; onClose: (
         aria-label={`${entry.word} details`}
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => e.key === 'Escape' && onClose()}
-        ref={ref as never}
       >
         <button type="button" className="btn ghost small close" onClick={onClose} aria-label="Close" autoFocus>✕</button>
         <WordCard entry={entry} />

@@ -27,6 +27,9 @@ Last verified on 2026-10-09 with `npm run check` (typecheck plus **184 Vitest te
 - **Accessibility:** axe (WCAG 2 A/AA) reports zero violations on every screen, in light and dark mode, on desktop and mobile, and on all 23 modes that run without audio. Keyboard play is covered by tests: number keys, Enter, Space, typing tiles, and focus moving to Next. (`e2e/a11y.spec.ts`, `e2e/modes.spec.ts`)
 - **End-to-end loop:** learn → reload → library → adaptive review → results → dashboard, on desktop and mobile. (`e2e/loop.spec.ts`)
 
+- **Desktop shell:** the Electron app loads the built app from disk and keeps progress after it is closed and reopened. This was tested under Xvfb on Linux with the same `electron/main.cjs` the Windows build uses. (`e2e-electron/app.spec.ts`)
+- **Windows installer build:** `npm run dist:win` produces `VocabQuest-Setup-0.1.0.exe` (≈91 MB; an NSIS PE32 installer with no build warnings). The app exe has the icon and version info embedded, and `app.asar` contains only `dist/`, `electron/main.cjs`, the icon and `package.json`.
+
 ## FAIL
 
 - None known.
@@ -42,6 +45,8 @@ Last verified on 2026-10-09 with `npm run check` (typecheck plus **184 Vitest te
 - **CI:** no GitHub Actions workflow has been added.
 
 ## UNVERIFIED (not testable here)
+
+- **Running the installer on Windows:** no Windows machine is available, so installing, the shortcuts, uninstalling, the SmartScreen prompt and Windows speech voices in the desktop app are untested. The installer is unsigned.
 
 - **Real speech output:** the test browser has no speech voices. The 7 listening modes passed axe audits against the dev server with a forced-availability flag, and their logic is unit-tested with a mocked `speak`, but audible playback, voice quality and timing on real devices have not been checked.
 - **Dataset content:** the format is machine-validated, but IPA, Vietnamese meanings and translations, stress positions and collocations were hand-authored and have not been reviewed by a native speaker or linguist.

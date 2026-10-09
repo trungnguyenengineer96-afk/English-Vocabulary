@@ -11,11 +11,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "check": "npm run typecheck && npm test"
-  },
-  "dependencies": {
-    "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "check": "npm run typecheck && npm test",
+    "app": "vite build && electron .",
+    "dist:win": "node scripts/build-win.mjs",
+    "test:electron": "vite build && playwright test -c playwright.electron.config.ts"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.10.2",
@@ -27,9 +26,46 @@
     "@types/react": "19.1.6",
     "@types/react-dom": "19.1.6",
     "@vitejs/plugin-react": "4.5.1",
+    "electron": "^38.2.0",
+    "electron-builder": "^26.0.12",
     "jsdom": "26.1.0",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "resedit": "^2.0.3",
     "typescript": "5.8.3",
     "vite": "6.3.5",
     "vitest": "3.2.2"
+  },
+  "main": "electron/main.cjs",
+  "description": "Gamified English vocabulary learning for Vietnamese speakers",
+  "author": "Vocab Quest",
+  "build": {
+    "appId": "com.vocabquest.app",
+    "productName": "Vocab Quest",
+    "copyright": "Vocab Quest",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/main.cjs",
+      "build/icon.png",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "dir",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "artifactName": "VocabQuest-Setup-${version}.exe",
+      "signAndEditExecutable": false
+    },
+    "afterPack": "electron/afterPack.cjs"
   }
 }

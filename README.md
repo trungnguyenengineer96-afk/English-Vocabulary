@@ -16,6 +16,17 @@ npm run build        # static site in dist/ (no server needed)
 npm run preview
 ```
 
+## Windows desktop app (.exe)
+
+```bash
+npm run dist:win     # → release/VocabQuest-Setup-<version>.exe
+```
+
+The app is packaged with Electron. The installer is built by a custom NSIS script (`build/installer.nsi`) and `scripts/build-win.mjs`, so it can be built on Linux without Wine. It installs per user (no administrator rights) to `%LOCALAPPDATA%\Programs\Vocab Quest`, with Vietnamese and English installer screens and Start-menu and desktop shortcuts. It uninstalls from *Settings → Apps*. Learning progress lives in `%APPDATA%\Vocab Quest` and is kept across updates and uninstalls.
+The installer is not code-signed, so Windows SmartScreen may show "Windows protected your PC". Click **More info → Run anyway**.
+
+`npm run app` runs the desktop shell locally. `npm run test:electron` launches it and checks that progress survives a restart (use `xvfb-run -a` on headless Linux).
+
 ## Test it
 
 ```bash

@@ -16,5 +16,5 @@
     "types": ["vitest/globals", "@testing-library/jest-dom", "node"],
     "noEmit": true
   },
-  "include": ["src", "e2e", "vite.config.ts", "playwright.config.ts"]
+  "include": ["src", "e2e", "e2e-electron", "vite.config.ts", "playwright.config.ts", "playwright.electron.config.ts"]
 }
